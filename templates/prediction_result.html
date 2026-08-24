@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>HeartQAML | Risk Assessment</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f7fbfc 0%,
+                    #eef8f7 45%,
+                    #f4f7ff 100%
+                );
+
+            color: #17233c;
+            min-height: 100vh;
+        }
+
+        /* =====================================================
+           NAVBAR
+        ===================================================== */
+
+        .navbar {
+            height: 78px;
+
+            /* FIXED: solid background */
+            background: #ffffff;
+
+            backdrop-filter: blur(12px);
+
+            border-bottom: 1px solid #e5eaf0;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 0 7%;
+
+            position: sticky;
+            top: 0;
+
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            font-size: 24px;
+            font-weight: 800;
+
+            color: #116f6b;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+
+            border-radius: 12px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: white;
+
+            font-size: 21px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #0e817a,
+                    #2476d2
+                );
+
+            box-shadow:
+                0 8px 20px rgba(14,129,122,0.20);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+
+            color: #60708b;
+
+            font-weight: 600;
+
+            font-size: 15px;
+        }
+
+        .nav-links a:hover {
+            color: #117d76;
+        }
+
+        .logout-btn {
+            padding: 11px 19px;
+
+            border-radius: 10px;
+
+            background: #117d76;
+
+            color: white !important;
+
+            transition: 0.2s;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-1px);
+
+            box-shadow:
+                0 8px 18px rgba(17,125,118,0.20);
+        }
+
+
+        /* =====================================================
+           PAGE
+        ===================================================== */
+
+        .page {
+            width: 86%;
+            max-width: 1250px;
+
+            margin: 45px auto 70px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+
+            padding: 8px 15px;
+
+            border-radius: 30px;
+
+            background: #dff8f4;
+
+            color: #08766e;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            margin-bottom: 15px;
+        }
+
+        .eyebrow span {
+            width: 7px;
+            height: 7px;
+
+            border-radius: 50%;
+
+            background: #0c9b89;
+
+            margin-right: 8px;
+        }
+
+        .page-title {
+            font-size: 42px;
+
+            line-height: 1.12;
+
+            margin-bottom: 10px;
+
+            font-weight: 800;
+
+            letter-spacing: -1px;
+        }
+
+        .page-subtitle {
+            color: #687994;
+
+            font-size: 17px;
+
+            margin-bottom: 32px;
+        }
+
+
+        /* =====================================================
+           MAIN RESULT
+        ===================================================== */
+
+        .result-layout {
+            display: grid;
+
+            grid-template-columns:
+                0.9fr
+                1.4fr;
+
+            gap: 25px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.96);
+
+            border: 1px solid #e7ebf1;
+
+            border-radius: 24px;
+
+            box-shadow:
+                0 18px 50px rgba(28,48,77,0.08);
+        }
+
+
+        /* =====================================================
+           RISK CARD
+        ===================================================== */
+
+        .risk-card {
+            padding: 30px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            text-align: center;
+        }
+
+        .risk-label {
+            color: #75839b;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1.5px;
+
+            margin-bottom: 20px;
+        }
+
+        .risk-circle {
+            width: 190px;
+            height: 190px;
+
+            border-radius: 50%;
+
+            /* Default value.
+               JavaScript replaces this with
+               the actual model probability. */
+
+            background:
+                conic-gradient(
+                    #118a80 0%,
+                    #e8eef2 0%
+                );
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            position: relative;
+
+            margin-bottom: 20px;
+        }
+
+        .risk-circle::before {
+            content: "";
+
+            position: absolute;
+
+            width: 158px;
+            height: 158px;
+
+            border-radius: 50%;
+
+            background: white;
+        }
+
+        .risk-number {
+            position: relative;
+
+            z-index: 2;
+
+            font-size: 39px;
+
+            font-weight: 800;
+
+            color: #17233c;
+        }
+
+        .risk-percent {
+            position: relative;
+
+            z-index: 2;
+
+            font-size: 16px;
+
+            color: #6d7c94;
+
+            font-weight: 600;
+        }
+
+        .risk-level {
+            display: inline-block;
+
+            padding: 9px 19px;
+
+            border-radius: 30px;
+
+            background: #fff4db;
+
+            color: #a96c00;
+
+            font-weight: 800;
+
+            font-size: 13px;
+
+            letter-spacing: 0.5px;
+        }
+
+
+        /* =====================================================
+           INFORMATION CARD
+        ===================================================== */
+
+        .info-card {
+            padding: 30px;
+        }
+
+        .info-header {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-start;
+
+            margin-bottom: 25px;
+        }
+
+        .info-header h2 {
+            font-size: 24px;
+
+            margin-bottom: 6px;
+        }
+
+        .info-header p {
+            color: #75839b;
+
+            font-size: 14px;
+        }
+
+        .status {
+            padding: 8px 13px;
+
+            border-radius: 30px;
+
+            background: #ddf7e9;
+
+            color: #087a50;
+
+            font-size: 12px;
+
+            font-weight: 800;
+        }
+
+        .diagnosis-box {
+            padding: 22px;
+
+            border-radius: 16px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f1faf8,
+                    #f7f9ff
+                );
+
+            border: 1px solid #e0eceb;
+
+            margin-bottom: 22px;
+        }
+
+        .diagnosis-title {
+            color: #66758e;
+
+            font-size: 12px;
+
+            font-weight: 700;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+
+            margin-bottom: 8px;
+        }
+
+        .diagnosis-result {
+            font-size: 24px;
+
+            font-weight: 800;
+
+            color: #17233c;
+        }
+
+
+        /* =====================================================
+           META
+        ===================================================== */
+
+        .meta-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 12px;
+        }
+
+        .meta-box {
+            padding: 15px;
+
+            border: 1px solid #e8edf2;
+
+            border-radius: 13px;
+
+            background: #fbfcfd;
+        }
+
+        .meta-label {
+            font-size: 11px;
+
+            color: #8290a5;
+
+            text-transform: uppercase;
+
+            font-weight: 700;
+
+            margin-bottom: 6px;
+        }
+
+        .meta-value {
+            font-size: 14px;
+
+            font-weight: 700;
+
+            color: #263653;
+        }
+
+
+        /* =====================================================
+           FEATURES
+        ===================================================== */
+
+        .section {
+            margin-top: 30px;
+        }
+
+        .section-header {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 16px;
+        }
+
+        .section-header h2 {
+            font-size: 22px;
+        }
+
+        .confidence {
+            padding: 8px 13px;
+
+            background: #e5f7f4;
+
+            color: #08766e;
+
+            border-radius: 30px;
+
+            font-size: 12px;
+
+            font-weight: 800;
+        }
+
+        .features-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 13px;
+        }
+
+        .feature {
+            background: white;
+
+            border: 1px solid #e8edf2;
+
+            border-radius: 15px;
+
+            padding: 18px;
+
+            transition: 0.2s;
+        }
+
+        .feature:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 10px 25px rgba(30,50,80,0.07);
+        }
+
+        .feature-name {
+            font-size: 12px;
+
+            color: #7a899f;
+
+            margin-bottom: 8px;
+        }
+
+        .feature-value {
+            font-size: 20px;
+
+            font-weight: 800;
+
+            color: #1d2b45;
+        }
+
+        .feature-value small {
+            font-size: 11px;
+
+            color: #7a899f;
+
+            font-weight: 600;
+        }
+
+
+        /* =====================================================
+           NOTICE
+        ===================================================== */
+
+        .notice {
+            margin-top: 25px;
+
+            padding: 18px 20px;
+
+            border-radius: 15px;
+
+            background: #fffaf0;
+
+            border: 1px solid #f4e6c2;
+
+            display: flex;
+
+            gap: 12px;
+
+            color: #75643e;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+        }
+
+        .notice-icon {
+            font-size: 20px;
+        }
+
+
+        /* =====================================================
+           BUTTONS
+        ===================================================== */
+
+        .actions {
+            display: flex;
+
+            gap: 13px;
+
+            margin-top: 28px;
+        }
+
+        .btn {
+            padding: 13px 21px;
+
+            border-radius: 12px;
+
+            text-decoration: none;
+
+            font-weight: 700;
+
+            font-size: 14px;
+
+            transition: 0.2s;
+        }
+
+        .btn-primary {
+            background: #117d76;
+
+            color: white;
+
+            box-shadow:
+                0 8px 20px rgba(17,125,118,0.18);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: white;
+
+            color: #243451;
+
+            border: 1px solid #dce3ea;
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafb;
+        }
+
+
+        /* =====================================================
+           FOOTER
+        ===================================================== */
+
+        .footer {
+            text-align: center;
+
+            margin-top: 45px;
+
+            color: #8996a9;
+
+            font-size: 12px;
+        }
+
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
+        @media (max-width: 900px) {
+
+            .result-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .features-grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+
+        @media (max-width: 550px) {
+
+            .page {
+                width: 92%;
+
+                margin-top: 30px;
+            }
+
+            .page-title {
+                font-size: 31px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .meta-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                text-align: center;
+            }
+
+            .navbar {
+                padding: 0 4%;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     NAVIGATION BAR
+========================================================= -->
+
+<nav class="navbar">
+
+    <div class="brand">
+
+        <div class="brand-icon">
+            ♥
+        </div>
+
+        HeartQAML
+
+    </div>
+
+
+    <div class="nav-links">
+
+        <a href="{{ url_for('patient_dashboard') }}">
+            Dashboard
+        </a>
+
+        <a href="{{ url_for('upload_report') }}">
+            Upload Report
+        </a>
+
+        <a href="{{ url_for('logout') }}"
+           class="logout-btn">
+            Logout
+        </a>
+
+    </div>
+
+</nav>
+
+
+<!-- =========================================================
+     MAIN CONTENT
+========================================================= -->
+
+<main class="page">
+
+
+    <div class="eyebrow">
+
+        <span></span>
+
+        AI + Quantum-Assisted Decision Support
+
+    </div>
+
+
+    <h1 class="page-title">
+
+        Your Heart Risk
+        <br>
+        Assessment
+
+    </h1>
+
+
+    <p class="page-subtitle">
+
+        AI-assisted analysis of your uploaded clinical
+        information using the HeartQAML decision-support engine.
+
+    </p>
+
+
+    <!-- =====================================================
+         RESULT CARDS
+    ===================================================== -->
+
+    <div class="result-layout">
+
+
+        <!-- =================================================
+             RISK SCORE
+        ================================================= -->
+
+        <div class="card risk-card">
+
+            <div class="risk-label">
+                AI Risk Probability
+            </div>
+
+
+            <!--
+                IMPORTANT:
+                We use data-risk instead of putting
+                Jinja directly inside conic-gradient().
+            -->
+
+            <div class="risk-circle"
+                 data-risk="{{ prediction.risk_probability_percent }}">
+
+                <div>
+
+                    <div class="risk-number">
+
+                        {{ prediction.risk_probability_percent }}
+
+                    </div>
+
+                    <div class="risk-percent">
+
+                        percent
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="risk-level">
+
+                {{ prediction.risk_level }} RISK
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             RESULT INFORMATION
+        ================================================= -->
+
+        <div class="card info-card">
+
+
+            <div class="info-header">
+
+                <div>
+
+                    <h2>
+                        Clinical Intelligence Result
+                    </h2>
+
+                    <p>
+                        Automated HeartQAML assessment
+                    </p>
+
+                </div>
+
+
+                <div class="status">
+
+                    ● COMPLETED
+
+                </div>
+
+            </div>
+
+
+            <div class="diagnosis-box">
+
+                <div class="diagnosis-title">
+
+                    Assessment Result
+
+                </div>
+
+
+                <div class="diagnosis-result">
+
+                    {{ prediction.result_text }}
+
+                </div>
+
+            </div>
+
+
+            <div class="meta-grid">
+
+
+                <div class="meta-box">
+
+                    <div class="meta-label">
+                        AI Model
+                    </div>
+
+                    <div class="meta-value">
+                        Hybrid KNN + RF
+                    </div>
+
+                </div>
+
+
+                <div class="meta-box">
+
+                    <div class="meta-label">
+                        Model Version
+                    </div>
+
+                    <div class="meta-value">
+
+                        {{ prediction.model_version }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="meta-box">
+
+                    <div class="meta-label">
+                        Doctor Review
+                    </div>
+
+                    <div class="meta-value">
+
+                        Pending
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         EXTRACTED CLINICAL FEATURES
+    ===================================================== -->
+
+    <section class="section">
+
+
+        <div class="section-header">
+
+            <h2>
+                Extracted Clinical Features
+            </h2>
+
+
+            <div class="confidence">
+
+                Extraction Confidence:
+                {{ prediction.extraction_confidence }}
+
+            </div>
+
+        </div>
+
+
+        <div class="features-grid">
+
+
+            <!-- AGE -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Age
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.age }}
+
+                </div>
+
+            </div>
+
+
+            <!-- SEX -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Sex
+                </div>
+
+                <div class="feature-value">
+
+                    {% if prediction.sex == 1 %}
+                        Male
+                    {% else %}
+                        Female
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <!-- CHEST PAIN -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Chest Pain Type
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.chest_pain_type }}
+
+                </div>
+
+            </div>
+
+
+            <!-- BLOOD PRESSURE -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Resting BP
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.resting_bp }}
+
+                    <small>mmHg</small>
+
+                </div>
+
+            </div>
+
+
+            <!-- CHOLESTEROL -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Cholesterol
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.cholesterol }}
+
+                    <small>mg/dL</small>
+
+                </div>
+
+            </div>
+
+
+            <!-- FASTING BLOOD SUGAR -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Fasting Blood Sugar
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.fasting_blood_sugar }}
+
+                </div>
+
+            </div>
+
+
+            <!-- RESTING ECG -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Resting ECG
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.resting_ecg }}
+
+                </div>
+
+            </div>
+
+
+            <!-- MAXIMUM HEART RATE -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Maximum Heart Rate
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.max_heart_rate }}
+
+                    <small>bpm</small>
+
+                </div>
+
+            </div>
+
+
+            <!-- EXERCISE ANGINA -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Exercise Angina
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.exercise_angina }}
+
+                </div>
+
+            </div>
+
+
+            <!-- OLDPEAK -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    Oldpeak
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.oldpeak }}
+
+                </div>
+
+            </div>
+
+
+            <!-- ST SLOPE -->
+
+            <div class="feature">
+
+                <div class="feature-name">
+                    ST Slope
+                </div>
+
+                <div class="feature-value">
+
+                    {{ prediction.st_slope }}
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         CLINICAL NOTICE
+    ===================================================== -->
+
+    <div class="notice">
+
+        <div class="notice-icon">
+            ⚕
+        </div>
+
+        <div>
+
+            <strong>
+                Clinical Decision Support Notice
+            </strong>
+
+            <br>
+
+            This AI-generated result is intended to support
+            clinical decision-making and is not a medical
+            diagnosis. A qualified healthcare professional
+            should review the result and the underlying
+            clinical information.
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         ACTION BUTTONS
+    ===================================================== -->
+
+    <div class="actions">
+
+
+        <a href="{{ url_for('patient_dashboard') }}"
+           class="btn btn-primary">
+
+            ← Back to Dashboard
+
+        </a>
+
+
+        <a href="{{ url_for('upload_report') }}"
+           class="btn btn-secondary">
+
+            Upload Another Report
+
+        </a>
+
+
+    </div>
+
+
+    <!-- =====================================================
+         FOOTER
+    ===================================================== -->
+
+    <div class="footer">
+
+        HeartQAML · AI-Powered Clinical Decision Support
+
+    </div>
+
+
+</main>
+
+
+<!-- =========================================================
+     RISK CIRCLE JAVASCRIPT
+========================================================= -->
+
+<script>
+
+    /*
+       Get the risk percentage generated by Flask/Jinja.
+       Example:
+
+       data-risk="54.5"
+    */
+
+    const riskCircle =
+        document.querySelector(".risk-circle");
+
+
+    if (riskCircle) {
+
+        const risk =
+            parseFloat(
+                riskCircle.dataset.risk || "0"
+            );
+
+
+        /*
+           Keep the value safely between
+           0 and 100.
+        */
+
+        const safeRisk =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    risk
+                )
+            );
+
+
+        /*
+           Create the circular progress indicator.
+        */
+
+        riskCircle.style.background =
+            `conic-gradient(
+                #118a80 ${safeRisk}%,
+                #e8eef2 ${safeRisk}%
+            )`;
+
+    }
+
+</script>
+
+
+</body>
+
+</html>

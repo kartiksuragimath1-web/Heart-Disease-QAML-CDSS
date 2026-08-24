@@ -1,0 +1,2144 @@
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash
+)
+
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
+
+from src.prediction import predict_heart_disease
+from src.extraction_service import save_extracted_features
+from src.prediction_service import predict_from_extraction
+
+from auth import register_patient, authenticate_user
+from database import get_db_connection
+
+app = Flask(__name__)
+# ============================================================
+# FILE UPLOAD CONFIGURATION
+# ============================================================
+
+BASE_UPLOAD_FOLDER = "uploads"
+
+UPLOAD_FOLDERS = {
+    "ECG": "uploads/ecg",
+    "BLOOD_TEST": "uploads/blood_reports",
+    "ECHO": "uploads/echo",
+    "STRESS_TEST": "uploads/stress_test",
+    "OTHER": "uploads/other"
+}
+
+ALLOWED_EXTENSIONS = {
+    "pdf",
+    "png",
+    "jpg",
+    "jpeg"
+}
+
+def allowed_file(filename):
+    return (
+        "." in filename and
+        filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
+
+app = Flask(__name__)
+
+# Required for Flask sessions
+# Later we will move this to .env
+app.secret_key = "heart-cdss-development-secret-key"
+
+
+# ============================================================
+# HOME
+# ============================================================
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+# ============================================================
+# SEPARATE ROLE AUTHENTICATION
+# ============================================================
+
+
+# ============================================================
+# PATIENT LOGIN
+# ============================================================
+
+@app.route("/patient/login", methods=["GET", "POST"])
+def patient_login():
+
+    if request.method == "POST":
+
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            flash("Please enter email and password.", "danger")
+            return redirect(url_for("patient_login"))
+
+        connection = get_db_connection()
+
+        if connection is None:
+            flash("Database connection failed.", "danger")
+            return redirect(url_for("patient_login"))
+
+        cursor = connection.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT *
+                FROM users
+                WHERE email = %s
+                AND role = 'patient'
+                AND is_active = 1
+                LIMIT 1
+                """,
+                (email,)
+            )
+
+            user = cursor.fetchone()
+
+            if user and check_password_hash(
+                user["password_hash"],
+                password
+            ):
+
+                session.clear()
+
+                session["user_id"] = user["user_id"]
+                session["full_name"] = user["full_name"]
+                session["email"] = user["email"]
+                session["role"] = "patient"
+
+                flash("Patient login successful.", "success")
+
+                return redirect(
+                    url_for("patient_dashboard")
+                )
+
+            flash(
+                "Invalid patient email or password.",
+                "danger"
+            )
+
+        except Exception as e:
+
+            print("Patient login error:", e)
+
+            flash(
+                "Unable to process login.",
+                "danger"
+            )
+
+        finally:
+
+            cursor.close()
+            connection.close()
+
+    return render_template("patient_login.html")
+
+
+# ============================================================
+# PATIENT REGISTER
+# ============================================================
+
+@app.route("/patient/register", methods=["GET", "POST"])
+def patient_register():
+
+    if request.method == "POST":
+
+        full_name = request.form.get(
+            "full_name",
+            ""
+        ).strip()
+
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
+
+        phone = request.form.get(
+            "phone",
+            ""
+        ).strip()
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        )
+
+        if not full_name or not email or not password:
+
+            flash(
+                "Please fill all required fields.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("patient_register")
+            )
+
+        if password != confirm_password:
+
+            flash(
+                "Passwords do not match.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("patient_register")
+            )
+
+        if len(password) < 6:
+
+            flash(
+                "Password must contain at least 6 characters.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("patient_register")
+            )
+
+        connection = get_db_connection()
+
+        if connection is None:
+
+            flash(
+                "Database connection failed.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("patient_register")
+            )
+
+        cursor = connection.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT user_id
+                FROM users
+                WHERE email = %s
+                LIMIT 1
+                """,
+                (email,)
+            )
+
+            existing_user = cursor.fetchone()
+
+            if existing_user:
+
+                flash(
+                    "An account with this email already exists.",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("patient_register")
+                )
+
+            password_hash = generate_password_hash(
+                password
+            )
+
+            cursor.execute(
+                """
+                INSERT INTO users
+                (
+                    full_name,
+                    email,
+                    password_hash,
+                    phone,
+                    role,
+                    is_active
+                )
+                VALUES
+                (%s, %s, %s, %s, 'patient', 1)
+                """,
+                (
+                    full_name,
+                    email,
+                    password_hash,
+                    phone
+                )
+            )
+
+            connection.commit()
+
+            flash(
+                "Patient account created successfully. Please login.",
+                "success"
+            )
+
+            return redirect(
+                url_for("patient_login")
+            )
+
+        except Exception as e:
+
+            connection.rollback()
+
+            print("Patient registration error:", e)
+
+            flash(
+                "Unable to create patient account.",
+                "danger"
+            )
+
+        finally:
+
+            cursor.close()
+            connection.close()
+
+    return render_template("patient_register.html")
+
+
+# ============================================================
+# DOCTOR LOGIN
+# ============================================================
+
+@app.route("/doctor/login", methods=["GET", "POST"])
+def doctor_login():
+
+    if request.method == "POST":
+
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        if not email or not password:
+
+            flash(
+                "Please enter email and password.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("doctor_login")
+            )
+
+        connection = get_db_connection()
+
+        if connection is None:
+
+            flash(
+                "Database connection failed.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("doctor_login")
+            )
+
+        cursor = connection.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT *
+                FROM users
+                WHERE email = %s
+                AND role = 'doctor'
+                AND is_active = 1
+                LIMIT 1
+                """,
+                (email,)
+            )
+
+            user = cursor.fetchone()
+
+            if user and check_password_hash(
+                user["password_hash"],
+                password
+            ):
+
+                session.clear()
+
+                session["user_id"] = user["user_id"]
+                session["full_name"] = user["full_name"]
+                session["email"] = user["email"]
+                session["role"] = "doctor"
+
+                flash(
+                    "Doctor login successful.",
+                    "success"
+                )
+
+                return redirect(
+                    url_for("doctor_dashboard")
+                )
+
+            flash(
+                "Invalid doctor email or password.",
+                "danger"
+            )
+
+        except Exception as e:
+
+            print("Doctor login error:", e)
+
+            flash(
+                "Unable to process login.",
+                "danger"
+            )
+
+        finally:
+
+            cursor.close()
+            connection.close()
+
+    return render_template("doctor_login.html")
+
+
+# ============================================================
+# DOCTOR REGISTER
+# ============================================================
+
+@app.route("/doctor/register", methods=["GET", "POST"])
+def doctor_register():
+
+    if request.method == "POST":
+
+        full_name = request.form.get(
+            "full_name",
+            ""
+        ).strip()
+
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
+
+        phone = request.form.get(
+            "phone",
+            ""
+        ).strip()
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        )
+
+        if not full_name or not email or not password:
+
+            flash(
+                "Please fill all required fields.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("doctor_register")
+            )
+
+        if password != confirm_password:
+
+            flash(
+                "Passwords do not match.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("doctor_register")
+            )
+
+        if len(password) < 6:
+
+            flash(
+                "Password must contain at least 6 characters.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("doctor_register")
+            )
+
+        connection = get_db_connection()
+
+        if connection is None:
+
+            flash(
+                "Database connection failed.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("doctor_register")
+            )
+
+        cursor = connection.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT user_id
+                FROM users
+                WHERE email = %s
+                LIMIT 1
+                """,
+                (email,)
+            )
+
+            existing_user = cursor.fetchone()
+
+            if existing_user:
+
+                flash(
+                    "An account with this email already exists.",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("doctor_register")
+                )
+
+            password_hash = generate_password_hash(
+                password
+            )
+
+            cursor.execute(
+                """
+                INSERT INTO users
+                (
+                    full_name,
+                    email,
+                    password_hash,
+                    phone,
+                    role,
+                    is_active
+                )
+                VALUES
+                (%s, %s, %s, %s, 'doctor', 1)
+                """,
+                (
+                    full_name,
+                    email,
+                    password_hash,
+                    phone
+                )
+            )
+
+            connection.commit()
+
+            flash(
+                "Doctor account created successfully. Please login.",
+                "success"
+            )
+
+            return redirect(
+                url_for("doctor_login")
+            )
+
+        except Exception as e:
+
+            connection.rollback()
+
+            print("Doctor registration error:", e)
+
+            flash(
+                "Unable to create doctor account.",
+                "danger"
+            )
+
+        finally:
+
+            cursor.close()
+            connection.close()
+
+    return render_template("doctor_register.html")
+
+# ============================================================
+# ADMIN REGISTRATION
+# ============================================================
+
+@app.route("/admin/register", methods=["GET", "POST"])
+def admin_register():
+
+    if request.method == "POST":
+
+        full_name = request.form.get(
+            "full_name",
+            ""
+        ).strip()
+
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
+
+        phone = request.form.get(
+            "phone",
+            ""
+        ).strip()
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        )
+
+        if not full_name or not email or not password:
+
+            flash(
+                "Please fill all required fields.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("admin_register")
+            )
+
+        if password != confirm_password:
+
+            flash(
+                "Passwords do not match.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("admin_register")
+            )
+
+        if len(password) < 8:
+
+            flash(
+                "Password must contain at least 8 characters.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("admin_register")
+            )
+
+        connection = get_db_connection()
+
+        if connection is None:
+
+            flash(
+                "Database connection failed.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("admin_register")
+            )
+
+        cursor = connection.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT user_id
+                FROM users
+                WHERE email = %s
+                LIMIT 1
+                """,
+                (email,)
+            )
+
+            existing_user = cursor.fetchone()
+
+            if existing_user:
+
+                flash(
+                    "An account with this email already exists.",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("admin_register")
+                )
+
+            password_hash = generate_password_hash(
+                password
+            )
+
+            cursor.execute(
+                """
+                INSERT INTO users
+                (
+                    full_name,
+                    email,
+                    password_hash,
+                    phone,
+                    role,
+                    is_active
+                )
+                VALUES
+                (%s, %s, %s, %s, 'admin', 1)
+                """,
+                (
+                    full_name,
+                    email,
+                    password_hash,
+                    phone
+                )
+            )
+
+            connection.commit()
+
+            flash(
+                "Admin account created successfully. Please login.",
+                "success"
+            )
+
+            return redirect(
+                url_for("admin_login")
+            )
+
+        except Exception as e:
+
+            connection.rollback()
+
+            print(
+                "Admin registration error:",
+                e
+            )
+
+            flash(
+                "Unable to create admin account.",
+                "danger"
+            )
+
+        finally:
+
+            cursor.close()
+            connection.close()
+
+    return render_template(
+        "admin_register.html"
+    )
+
+# ============================================================
+# ADMIN LOGIN
+# ============================================================
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+
+    if request.method == "POST":
+
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        if not email or not password:
+
+            flash(
+                "Please enter email and password.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("admin_login")
+            )
+
+        connection = get_db_connection()
+
+        if connection is None:
+
+            flash(
+                "Database connection failed.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("admin_login")
+            )
+
+        cursor = connection.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT *
+                FROM users
+                WHERE email = %s
+                AND role = 'admin'
+                AND is_active = 1
+                LIMIT 1
+                """,
+                (email,)
+            )
+
+            user = cursor.fetchone()
+
+            if user and check_password_hash(
+                user["password_hash"],
+                password
+            ):
+
+                session.clear()
+
+                session["user_id"] = user["user_id"]
+                session["full_name"] = user["full_name"]
+                session["email"] = user["email"]
+                session["role"] = "admin"
+
+                flash(
+                    "Admin login successful.",
+                    "success"
+                )
+
+                return redirect(
+                    url_for("admin_dashboard")
+                )
+
+            flash(
+                "Invalid admin email or password.",
+                "danger"
+            )
+
+        except Exception as e:
+
+            print("Admin login error:", e)
+
+            flash(
+                "Unable to process login.",
+                "danger"
+            )
+
+        finally:
+
+            cursor.close()
+            connection.close()
+
+    return render_template("admin_login.html")
+# ============================================================
+# PATIENT REGISTRATION
+# ============================================================
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+
+        full_name = request.form["full_name"].strip()
+        email = request.form["email"].strip().lower()
+        phone = request.form.get("phone", "").strip()
+        password = request.form["password"]
+        confirm_password = request.form["confirm_password"]
+
+        if not full_name or not email or not password:
+            flash("Please fill all required fields.", "danger")
+            return redirect(url_for("register"))
+
+        if password != confirm_password:
+            flash("Passwords do not match.", "danger")
+            return redirect(url_for("register"))
+
+        if len(password) < 8:
+            flash(
+                "Password must contain at least 8 characters.",
+                "danger"
+            )
+            return redirect(url_for("register"))
+
+        success, message = register_patient(
+            full_name=full_name,
+            email=email,
+            password=password,
+            phone=phone
+        )
+
+        if success:
+            flash(
+                "Registration successful. Please login.",
+                "success"
+            )
+            return redirect(url_for("login"))
+
+        flash(message, "danger")
+
+    return render_template("register.html")
+
+
+# ============================================================
+# LOGIN
+# ============================================================
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+
+        email = request.form["email"].strip().lower()
+        password = request.form["password"]
+
+        user = authenticate_user(email, password)
+
+        if user:
+
+            session.clear()
+
+            session["user_id"] = user["user_id"]
+            session["full_name"] = user["full_name"]
+            session["email"] = user["email"]
+            session["role"] = user["role"]
+
+            flash("Login successful.", "success")
+
+            # -----------------------------
+            # Role based redirection
+            # -----------------------------
+
+            if user["role"] == "patient":
+                return redirect(
+                    url_for("patient_dashboard")
+                )
+
+            elif user["role"] == "doctor":
+                return redirect(
+                    url_for("doctor_dashboard")
+                )
+
+            elif user["role"] == "admin":
+                return redirect(
+                    url_for("admin_dashboard")
+                )
+
+        flash(
+            "Invalid email or password.",
+            "danger"
+        )
+
+    return render_template("login.html")
+
+
+# ============================================================
+# LOGOUT
+# ============================================================
+
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    flash(
+        "You have been logged out.",
+        "success"
+    )
+
+    return redirect(url_for("login"))
+
+
+# ============================================================
+# PATIENT DASHBOARD
+# ============================================================
+
+@app.route("/patient/dashboard")
+def patient_dashboard():
+
+    # ========================================================
+    # LOGIN CHECK
+    # ========================================================
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "patient":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    patient_id = session["user_id"]
+
+    # ========================================================
+    # DATABASE CONNECTION
+    # ========================================================
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+
+        return render_template(
+            "patient_dashboard.html",
+            name=session.get("full_name"),
+            total_reports=0,
+            total_predictions=0,
+            latest_prediction=None,
+            doctor_reviews=0,
+            recent_assessments=[]
+        )
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        # ====================================================
+        # 1. TOTAL MEDICAL REPORTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_reports
+            FROM medical_reports
+            WHERE patient_id = %s
+            """,
+            (patient_id,)
+        )
+
+        report_result = cursor.fetchone()
+
+        total_reports = report_result["total_reports"] or 0
+
+
+        # ====================================================
+        # 2. TOTAL AI PREDICTIONS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_predictions
+            FROM predictions p
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+            WHERE m.patient_id = %s
+            AND p.prediction_status = 'COMPLETED'
+            """,
+            (patient_id,)
+        )
+
+        prediction_result = cursor.fetchone()
+
+        total_predictions = (
+            prediction_result["total_predictions"] or 0
+        )
+
+
+        # ====================================================
+        # 3. LATEST PREDICTION
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.prediction_result,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.created_at
+            FROM predictions p
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+            WHERE m.patient_id = %s
+            AND p.prediction_status = 'COMPLETED'
+            ORDER BY p.created_at DESC
+            LIMIT 1
+            """,
+            (patient_id,)
+        )
+
+        latest_prediction = cursor.fetchone()
+
+
+        # ====================================================
+        # 4. CONVERT PROBABILITY TO PERCENTAGE
+        # ====================================================
+
+        if latest_prediction:
+
+            latest_prediction["risk_probability_percent"] = round(
+                float(
+                    latest_prediction["risk_probability"]
+                ) * 100,
+                2
+            )
+
+
+        # ====================================================
+        # 5. DOCTOR REVIEWS
+        # ====================================================
+        #
+        # We first try to read doctor review information.
+        # If the review table/module is not ready yet,
+        # dashboard will safely show 0.
+        #
+
+        doctor_reviews = 0
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS doctor_reviews
+                FROM predictions p
+                JOIN extracted_features e
+                    ON p.extraction_id = e.extraction_id
+                JOIN medical_reports m
+                    ON e.report_id = m.report_id
+                WHERE m.patient_id = %s
+                AND p.doctor_review_status = 'COMPLETED'
+                """,
+                (patient_id,)
+            )
+
+            review_result = cursor.fetchone()
+
+            if review_result:
+                doctor_reviews = (
+                    review_result["doctor_reviews"] or 0
+                )
+
+        except Exception:
+
+            # Doctor review field may not exist yet.
+            connection.rollback()
+
+            doctor_reviews = 0
+
+
+        # ====================================================
+        # 6. RECENT ASSESSMENTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.prediction_result,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.created_at,
+
+                m.original_file_name,
+                m.report_type
+
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            WHERE m.patient_id = %s
+
+            ORDER BY p.created_at DESC
+
+            LIMIT 5
+            """,
+            (patient_id,)
+        )
+
+        recent_assessments = cursor.fetchall()
+
+
+        # ====================================================
+        # 7. CONVERT PROBABILITIES
+        # ====================================================
+
+        for assessment in recent_assessments:
+
+            assessment["risk_probability_percent"] = round(
+                float(
+                    assessment["risk_probability"]
+                ) * 100,
+                2
+            )
+
+
+        # ====================================================
+        # 8. SEND DATA TO HTML
+        # ====================================================
+
+        return render_template(
+            "patient_dashboard.html",
+
+            name=session.get("full_name"),
+
+            total_reports=total_reports,
+
+            total_predictions=total_predictions,
+
+            latest_prediction=latest_prediction,
+
+            doctor_reviews=doctor_reviews,
+
+            recent_assessments=recent_assessments
+        )
+
+
+    except Exception as e:
+
+        print(
+            "Patient dashboard database error:",
+            e
+        )
+
+        flash(
+            "Unable to load dashboard information.",
+            "danger"
+        )
+
+        return render_template(
+            "patient_dashboard.html",
+
+            name=session.get("full_name"),
+
+            total_reports=0,
+
+            total_predictions=0,
+
+            latest_prediction=None,
+
+            doctor_reviews=0,
+
+            recent_assessments=[]
+        )
+
+
+    finally:
+
+        cursor.close()
+        connection.close()
+
+
+# ============================================================
+# DOCTOR DASHBOARD
+# ============================================================
+
+@app.route("/doctor/dashboard")
+def doctor_dashboard():
+
+    # ========================================================
+    # LOGIN CHECK
+    # ========================================================
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+
+        return render_template(
+            "doctor_dashboard.html",
+            name=session.get("full_name"),
+            total_patients=0,
+            total_reports=0,
+            total_predictions=0,
+            pending_reviews=0,
+            high_risk_cases=0,
+            recent_cases=[]
+        )
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        # ====================================================
+        # 1. TOTAL PATIENTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_patients
+            FROM users
+            WHERE role = 'patient'
+            """
+        )
+
+        result = cursor.fetchone()
+
+        total_patients = result["total_patients"] or 0
+
+
+        # ====================================================
+        # 2. TOTAL MEDICAL REPORTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_reports
+            FROM medical_reports
+            """
+        )
+
+        result = cursor.fetchone()
+
+        total_reports = result["total_reports"] or 0
+
+
+        # ====================================================
+        # 3. TOTAL COMPLETED PREDICTIONS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_predictions
+            FROM predictions
+            WHERE prediction_status = 'COMPLETED'
+            """
+        )
+
+        result = cursor.fetchone()
+
+        total_predictions = result["total_predictions"] or 0
+
+
+        # ====================================================
+        # 4. HIGH RISK CASES
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS high_risk_cases
+            FROM predictions
+            WHERE prediction_status = 'COMPLETED'
+            AND risk_level = 'HIGH'
+            """
+        )
+
+        result = cursor.fetchone()
+
+        high_risk_cases = result["high_risk_cases"] or 0
+
+
+        # ====================================================
+        # 5. PENDING REVIEWS
+        # ====================================================
+        #
+        # Your current database may not yet contain a
+        # doctor-review column. Therefore we safely calculate
+        # pending cases from completed predictions.
+        #
+        # We will create the actual doctor-review workflow
+        # in the next step.
+        # ====================================================
+
+        pending_reviews = total_predictions
+
+
+        # ====================================================
+        # 6. RECENT PATIENT CASES
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.prediction_result,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.created_at,
+
+                m.report_id,
+                m.original_file_name,
+                m.report_type,
+
+                u.user_id,
+                u.full_name,
+                u.email
+
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            JOIN users u
+                ON m.patient_id = u.user_id
+
+            WHERE p.prediction_status = 'COMPLETED'
+
+            ORDER BY p.created_at DESC
+
+            LIMIT 10
+            """
+        )
+
+        recent_cases = cursor.fetchall()
+
+
+        # ====================================================
+        # 7. CONVERT PROBABILITY
+        # ====================================================
+
+        for case in recent_cases:
+
+            case["risk_probability_percent"] = round(
+                float(case["risk_probability"]) * 100,
+                2
+            )
+
+
+        # ====================================================
+        # 8. SEND DATA TO HTML
+        # ====================================================
+
+        return render_template(
+            "doctor_dashboard.html",
+
+            name=session.get("full_name"),
+
+            total_patients=total_patients,
+
+            total_reports=total_reports,
+
+            total_predictions=total_predictions,
+
+            pending_reviews=pending_reviews,
+
+            high_risk_cases=high_risk_cases,
+
+            recent_cases=recent_cases
+        )
+
+
+    except Exception as e:
+
+        print(
+            "Doctor dashboard database error:",
+            e
+        )
+
+        flash(
+            "Unable to load doctor dashboard.",
+            "danger"
+        )
+
+        return render_template(
+            "doctor_dashboard.html",
+
+            name=session.get("full_name"),
+
+            total_patients=0,
+
+            total_reports=0,
+
+            total_predictions=0,
+
+            pending_reviews=0,
+
+            high_risk_cases=0,
+
+            recent_cases=[]
+        )
+
+
+    finally:
+
+        cursor.close()
+        connection.close()
+
+
+# ============================================================
+# ADMIN DASHBOARD
+# ============================================================
+
+@app.route("/admin/dashboard")
+def admin_dashboard():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    return render_template(
+        "admin_dashboard.html",
+        name=session.get("full_name")
+    )
+
+# ============================================================
+# UPLOAD MEDICAL REPORT
+# ============================================================
+@app.route("/upload-report", methods=["GET", "POST"])
+def upload_report():
+
+    # ========================================================
+    # LOGIN REQUIRED
+    # ========================================================
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "patient":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    # ========================================================
+    # SHOW UPLOAD PAGE
+    # ========================================================
+
+    if request.method == "GET":
+        return render_template("upload_report.html")
+
+    # ========================================================
+    # GET FORM DATA
+    # ========================================================
+
+    report_type = request.form.get("report_type")
+
+    uploaded_file = request.files.get("report_file")
+
+    if not report_type:
+        flash("Please select a report type.", "danger")
+        return redirect(request.url)
+
+    if uploaded_file is None:
+        flash("Please select a file.", "danger")
+        return redirect(request.url)
+
+    if uploaded_file.filename == "":
+        flash("Please select a file.", "danger")
+        return redirect(request.url)
+
+    # ========================================================
+    # FILE VALIDATION
+    # ========================================================
+
+    if not allowed_file(uploaded_file.filename):
+        flash(
+            "Invalid file type. "
+            "Allowed: PDF, PNG, JPG, JPEG.",
+            "danger"
+        )
+        return redirect(request.url)
+
+    # ========================================================
+    # SECURE ORIGINAL FILE NAME
+    # ========================================================
+
+    original_filename = secure_filename(
+        uploaded_file.filename
+    )
+
+    extension = (
+        original_filename
+        .rsplit(".", 1)[1]
+        .lower()
+    )
+
+    # ========================================================
+    # GENERATE UNIQUE FILE NAME
+    # ========================================================
+
+    unique_filename = (
+        str(uuid.uuid4())
+        + "."
+        + extension
+    )
+
+    # ========================================================
+    # SELECT UPLOAD FOLDER
+    # ========================================================
+
+    folder = UPLOAD_FOLDERS.get(
+        report_type,
+        "uploads/other"
+    )
+
+    os.makedirs(
+        folder,
+        exist_ok=True
+    )
+
+    # ========================================================
+    # COMPLETE FILE PATH
+    # ========================================================
+
+    filepath = os.path.join(
+        folder,
+        unique_filename
+    )
+
+    # ========================================================
+    # SAVE FILE
+    # ========================================================
+
+    try:
+
+        uploaded_file.save(filepath)
+
+        file_size = os.path.getsize(
+            filepath
+        )
+
+    except Exception as e:
+
+        print(
+            "File save error:",
+            e
+        )
+
+        flash(
+            "Unable to save uploaded file.",
+            "danger"
+        )
+
+        return redirect(request.url)
+
+    # ========================================================
+    # SAVE REPORT INFORMATION
+    # ========================================================
+
+    connection = get_db_connection()
+
+    if connection is None:
+
+        flash(
+            "Database connection failed.",
+            "danger"
+        )
+
+        return redirect(request.url)
+
+    cursor = connection.cursor()
+
+    report_id = None
+
+    try:
+
+        patient_id = session["user_id"]
+
+        cursor.execute(
+            """
+            INSERT INTO medical_reports
+            (
+                patient_id,
+                report_type,
+                original_file_name,
+                stored_file_name,
+                file_path,
+                file_type,
+                file_size,
+                processing_status
+            )
+            VALUES
+            (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+            """,
+            (
+                patient_id,
+                report_type,
+                original_filename,
+                unique_filename,
+                filepath,
+                extension,
+                file_size,
+                "PROCESSING"
+            )
+        )
+
+        connection.commit()
+
+        report_id = cursor.lastrowid
+
+        print(
+            f"Medical report saved. "
+            f"Report ID: {report_id}"
+        )
+
+    except Exception as e:
+
+        connection.rollback()
+
+        print(
+            "Medical report database error:",
+            e
+        )
+
+        flash(
+            "Unable to save report information.",
+            "danger"
+        )
+
+        return redirect(request.url)
+
+    finally:
+
+        cursor.close()
+        connection.close()
+
+    # ========================================================
+    # AI PROCESSING
+    # ========================================================
+
+    # Currently automatic processing is enabled for PDF.
+    # OCR/image processing will be added in the next stage.
+
+    if extension == "pdf":
+
+        try:
+
+            extraction_id = save_extracted_features(
+                report_id,
+                filepath
+            )
+
+            if not extraction_id:
+
+                raise Exception(
+                    "Feature extraction failed."
+                )
+
+            # ------------------------------------------------
+            # Update report status based on extraction
+            # ------------------------------------------------
+
+            connection = get_db_connection()
+
+            if connection:
+
+                cursor = connection.cursor()
+
+                cursor.execute(
+                    """
+                    SELECT validation_status
+                    FROM extracted_features
+                    WHERE extraction_id = %s
+                    """,
+                    (extraction_id,)
+                )
+
+                extraction = cursor.fetchone()
+
+                cursor.close()
+                connection.close()
+
+                if extraction:
+
+                    validation_status = extraction[0]
+
+                else:
+
+                    validation_status = (
+                        "NEEDS_REVIEW"
+                    )
+
+            else:
+
+                validation_status = (
+                    "NEEDS_REVIEW"
+                )
+
+            # ------------------------------------------------
+            # Run ML only when extraction is VALID
+            # ------------------------------------------------
+
+            if validation_status == "VALID":
+
+                prediction_success = (
+                    predict_from_extraction(
+                        patient_id=session["user_id"],
+                        extraction_id=extraction_id
+                    )
+                )
+
+                if prediction_success:
+
+                    connection = get_db_connection()
+
+                    if connection:
+
+                        cursor = connection.cursor()
+
+                        cursor.execute(
+                            """
+                            UPDATE medical_reports
+                            SET processing_status = 'PROCESSED'
+                            WHERE report_id = %s
+                            """,
+                            (report_id,)
+                        )
+
+                        connection.commit()
+
+                        cursor.close()
+                        connection.close()
+
+                    return redirect(
+                        url_for(
+                            "prediction_result",
+                            extraction_id=extraction_id
+                        )
+                    )
+
+            else:
+
+                connection = get_db_connection()
+
+                if connection:
+
+                    cursor = connection.cursor()
+
+                    cursor.execute(
+                        """
+                        UPDATE medical_reports
+                        SET processing_status = 'NEEDS_REVIEW'
+                        WHERE report_id = %s
+                        """,
+                        (report_id,)
+                    )
+
+                    connection.commit()
+
+                    cursor.close()
+                    connection.close()
+
+                flash(
+                    "Report uploaded, but some clinical "
+                    "features require review before prediction.",
+                    "warning"
+                )
+
+                return redirect(
+                    url_for("patient_dashboard")
+                )
+
+        except Exception as e:
+
+            print(
+                "AI processing error:",
+                e
+            )
+
+            connection = get_db_connection()
+
+            if connection:
+
+                cursor = connection.cursor()
+
+                cursor.execute(
+                    """
+                    UPDATE medical_reports
+                    SET processing_status = 'FAILED'
+                    WHERE report_id = %s
+                    """,
+                    (report_id,)
+                )
+
+                connection.commit()
+
+                cursor.close()
+                connection.close()
+
+            flash(
+                "Report uploaded, but AI processing failed.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("patient_dashboard")
+            )
+
+    else:
+
+        # ----------------------------------------------------
+        # Images are stored for the OCR module.
+        # OCR will be connected in the next stage.
+        # ----------------------------------------------------
+
+        connection = get_db_connection()
+
+        if connection:
+
+            cursor = connection.cursor()
+
+            cursor.execute(
+                """
+                UPDATE medical_reports
+                SET processing_status = 'UPLOADED'
+                WHERE report_id = %s
+                """,
+                (report_id,)
+            )
+
+            connection.commit()
+
+            cursor.close()
+            connection.close()
+
+        flash(
+            "Report uploaded successfully. "
+            "Image processing will be performed by the OCR module.",
+            "success"
+        )
+
+        return redirect(
+            url_for("patient_dashboard")
+        )
+
+    return redirect(
+        url_for("patient_dashboard")
+    )
+
+
+
+@app.route("/prediction-result/<int:extraction_id>")
+def prediction_result(extraction_id):
+
+    # ========================================================
+    # LOGIN REQUIRED
+    # ========================================================
+
+    if "user_id" not in session:
+        flash(
+            "Please login first.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("login")
+        )
+
+    if session.get("role") != "patient":
+        flash(
+            "Access denied.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("home")
+        )
+
+    connection = get_db_connection()
+
+    if connection is None:
+
+        flash(
+            "Database connection failed.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("patient_dashboard")
+        )
+
+    cursor = connection.cursor(
+        dictionary=True
+    )
+
+    try:
+
+        query = """
+        SELECT
+            p.prediction_id,
+            p.prediction_result,
+            p.risk_probability,
+            p.risk_level,
+            p.model_name,
+            p.model_version,
+            p.prediction_status,
+            p.created_at,
+
+            e.age,
+            e.sex,
+            e.chest_pain_type,
+            e.resting_bp,
+            e.cholesterol,
+            e.fasting_blood_sugar,
+            e.resting_ecg,
+            e.max_heart_rate,
+            e.exercise_angina,
+            e.oldpeak,
+            e.st_slope,
+
+            e.extraction_confidence,
+            e.validation_status
+
+        FROM predictions p
+
+        INNER JOIN extracted_features e
+            ON p.extraction_id = e.extraction_id
+
+        WHERE
+            p.extraction_id = %s
+            AND p.patient_id = %s
+
+        ORDER BY p.prediction_id DESC
+
+        LIMIT 1
+        """
+
+        cursor.execute(
+            query,
+            (
+                extraction_id,
+                session["user_id"]
+            )
+        )
+
+        prediction = cursor.fetchone()
+
+        if prediction is None:
+
+            flash(
+                "Prediction result not found.",
+                "danger"
+            )
+
+            return redirect(
+                url_for("patient_dashboard")
+            )
+
+        # Convert probability to percentage
+        prediction["risk_probability_percent"] = round(
+            float(
+                prediction["risk_probability"]
+            ) * 100,
+            2
+        )
+
+        # Human-readable result
+        if prediction["prediction_result"] == 1:
+
+            prediction["result_text"] = (
+                "Heart Disease Risk Detected"
+            )
+
+        else:
+
+            prediction["result_text"] = (
+                "No Heart Disease Risk Detected"
+            )
+
+        return render_template(
+            "prediction_result.html",
+            prediction=prediction,
+            name=session.get("full_name")
+        )
+
+    except Exception as e:
+
+        print(
+            "Prediction result error:",
+            e
+        )
+
+        flash(
+            "Unable to load prediction result.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("patient_dashboard")
+        )
+
+    finally:
+
+        cursor.close()
+        connection.close()
+
+        
+# ============================================================
+# HEART DISEASE PREDICTION
+# Existing ML pipeline preserved
+# ============================================================
+
+@app.route("/predict", methods=["POST"])
+def predict():
+
+    patient = [
+
+        int(request.form["age"]),
+        int(request.form["sex"]),
+        int(request.form["cp"]),
+        int(request.form["trestbps"]),
+        int(request.form["chol"]),
+        int(request.form["fbs"]),
+        int(request.form["restecg"]),
+        int(request.form["thalach"]),
+        int(request.form["exang"]),
+        float(request.form["oldpeak"]),
+        int(request.form["slope"])
+
+    ]
+
+    prediction, probability = predict_heart_disease(patient)
+
+    if prediction == 1:
+        result = "Heart Disease Detected"
+    else:
+        result = "No Heart Disease"
+
+    return render_template(
+        "result.html",
+        prediction=result,
+        probability=round(probability * 100, 2)
+    )
+
+
+# ============================================================
+# RUN APPLICATION
+# ============================================================
+
+if __name__ == "__main__":
+    app.run(debug=True)

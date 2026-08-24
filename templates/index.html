@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>HeartQAML | Clinical Decision Support System</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            min-height: 100vh;
+            background: #f4f8fb;
+            color: #102a43;
+        }
+
+        .header {
+            height: 76px;
+            background: white;
+            border-bottom: 1px solid #e4ebf1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6%;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #147d76, #1769aa);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 800;
+            color: #116f70;
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            color: #718096;
+            margin-top: 2px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 70px 20px 45px;
+        }
+
+        .hero-label {
+            display: inline-block;
+            background: #e5f7f3;
+            color: #11786f;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            font-size: 46px;
+            margin-bottom: 15px;
+            color: #102a43;
+        }
+
+        .hero h1 span {
+            color: #12857d;
+        }
+
+        .hero p {
+            max-width: 720px;
+            margin: auto;
+            line-height: 1.7;
+            color: #627d98;
+            font-size: 17px;
+        }
+
+        .portal-section {
+            max-width: 1100px;
+            margin: 10px auto 70px;
+            padding: 0 25px;
+        }
+
+        .portal-title {
+            text-align: center;
+            font-size: 25px;
+            margin-bottom: 28px;
+        }
+
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+        }
+
+        .portal-card {
+            background: white;
+            border: 1px solid #e1eaf0;
+            border-radius: 22px;
+            padding: 32px 28px;
+            box-shadow: 0 10px 30px rgba(16, 42, 67, 0.06);
+            transition: 0.25s;
+        }
+
+        .portal-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 18px 40px rgba(16, 42, 67, 0.11);
+        }
+
+        .portal-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            background: #e9f8f4;
+            color: #117b73;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 20px;
+        }
+
+        .portal-card h2 {
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+
+        .portal-card p {
+            color: #718096;
+            line-height: 1.6;
+            min-height: 52px;
+            margin-bottom: 24px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            padding: 12px 10px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #117d75;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0d6963;
+        }
+
+        .btn-secondary {
+            border: 1px solid #cbd8e3;
+            color: #24445f;
+            background: white;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f9fc;
+        }
+
+        .admin-card {
+            border-top: 4px solid #1769aa;
+        }
+
+        .admin-card .portal-icon {
+            background: #eaf2fb;
+            color: #1769aa;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 25px;
+            border-top: 1px solid #e1e8ee;
+            background: white;
+            color: #829ab1;
+            font-size: 13px;
+        }
+
+        @media (max-width: 850px) {
+            .portal-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 34px;
+            }
+
+            .header {
+                padding: 0 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="header">
+
+    <div class="logo">
+
+        <div class="logo-icon">♥</div>
+
+        <div>
+            <div class="logo-text">HeartQAML</div>
+            <div class="logo-subtitle">
+                Clinical Decision Support System
+            </div>
+        </div>
+
+    </div>
+
+</header>
+
+
+<section class="hero">
+
+    <div class="hero-label">
+        AI-ASSISTED CARDIAC DECISION SUPPORT
+    </div>
+
+    <h1>
+        Welcome to <span>HeartQAML</span>
+    </h1>
+
+    <p>
+        An intelligent clinical decision-support platform for
+        heart disease risk assessment, medical report analysis,
+        AI-assisted prediction and doctor review.
+    </p>
+
+</section>
+
+
+<section class="portal-section">
+
+    <h2 class="portal-title">
+        Select Your Portal
+    </h2>
+
+
+    <div class="portal-grid">
+
+
+        <!-- PATIENT -->
+
+        <div class="portal-card">
+
+            <div class="portal-icon">
+                👤
+            </div>
+
+            <h2>Patient Portal</h2>
+
+            <p>
+                Upload medical reports, view AI-assisted
+                heart-risk assessments and track clinical reviews.
+            </p>
+
+            <div class="buttons">
+
+                <a
+                    href="{{ url_for('patient_login') }}"
+                    class="btn btn-primary"
+                >
+                    Patient Login
+                </a>
+
+                <a
+                    href="{{ url_for('patient_register') }}"
+                    class="btn btn-secondary"
+                >
+                    Register
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- DOCTOR -->
+
+        <div class="portal-card">
+
+            <div class="portal-icon">
+                👨‍⚕️
+            </div>
+
+            <h2>Doctor Portal</h2>
+
+            <p>
+                Review patient cases, examine AI predictions,
+                view medical reports and provide clinical feedback.
+            </p>
+
+            <div class="buttons">
+
+                <a
+                    href="{{ url_for('doctor_login') }}"
+                    class="btn btn-primary"
+                >
+                    Doctor Login
+                </a>
+
+                <a
+                    href="{{ url_for('doctor_register') }}"
+                    class="btn btn-secondary"
+                >
+                    Register
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- ADMIN -->
+
+        <div class="portal-card admin-card">
+
+            <div class="portal-icon">
+                🛡
+            </div>
+
+            <h2>Admin Portal</h2>
+
+            <p>
+                Manage users, doctors, reports, predictions and
+                overall HeartQAML system operations.
+            </p>
+
+            <div class="buttons">
+
+                <a
+                    href="{{ url_for('admin_login') }}"
+                    class="btn btn-primary"
+                    style="width:100%;"
+                >
+                    Admin Login
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<footer class="footer">
+
+    HeartQAML · AI-Assisted Clinical Decision Support System
+
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doctor Dashboard | Heart CDSS</title>
+</head>
+
+<body>
+
+    <h1>Doctor Dashboard</h1>
+
+    <h2>Welcome, Dr. {{ name }}</h2>
+
+    <ul>
+        <li>Patient Cases</li>
+        <li>AI Predictions</li>
+        <li>Clinical Feature Review</li>
+        <li>Medical Reports</li>
+        <li>Quantum-Assisted Results</li>
+        <li>Submit Clinical Review</li>
+    </ul>
+
+    <a href="{{ url_for('logout') }}">
+        Logout
+    </a>
+
+</body>
+</html>

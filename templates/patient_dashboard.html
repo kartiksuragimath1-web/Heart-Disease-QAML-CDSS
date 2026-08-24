@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Patient Dashboard | HeartQAML</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    <style>
+        .dashboard-number {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 6px 0;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            background: #e8f7f4;
+            color: #118a80;
+        }
+
+        .risk-high {
+            background: #ffe8e8;
+            color: #c62828;
+        }
+
+        .risk-moderate {
+            background: #fff3d6;
+            color: #9a6700;
+        }
+
+        .risk-low {
+            background: #e8f7f4;
+            color: #118a80;
+        }
+
+        .assessment-row {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr .8fr .8fr 1fr;
+            gap: 15px;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #e8eef2;
+        }
+
+        .assessment-row:last-child {
+            border-bottom: none;
+        }
+
+        .assessment-title {
+            font-weight: 700;
+            color: #172b3a;
+        }
+
+        .assessment-small {
+            font-size: 12px;
+            color: #71808c;
+            margin-top: 4px;
+        }
+
+        .status-completed {
+            color: #118a80;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 45px 20px;
+        }
+
+        .empty-icon {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .quick-action {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .assessment-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+
+</head>
+
+
+<body class="dashboard-body">
+
+<div class="dashboard-layout">
+
+
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
+
+    <aside class="sidebar">
+
+        <a
+            href="{{ url_for('patient_dashboard') }}"
+            class="sidebar-brand"
+        >
+
+            <div class="brand-icon">
+                ♥
+            </div>
+
+            <div>
+                <strong>HeartQAML</strong>
+                <small>Patient Portal</small>
+            </div>
+
+        </a>
+
+
+        <div class="sidebar-section-title">
+            MAIN MENU
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <a
+                href="{{ url_for('patient_dashboard') }}"
+                class="active"
+            >
+                <span>⌂</span>
+                Dashboard
+            </a>
+
+            <a href="{{ url_for('upload_report') }}">
+                <span>＋</span>
+                New Assessment
+            </a>
+
+            <a href="{{ url_for('upload_report') }}">
+                <span>▣</span>
+                Medical Reports
+            </a>
+
+            <a href="#">
+                <span>↗</span>
+                Prediction History
+            </a>
+
+            <a href="#">
+                <span>✓</span>
+                Doctor Reviews
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-section-title">
+            INTELLIGENCE
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <a href="#">
+                <span>Q</span>
+                QAML Results
+            </a>
+
+            <a href="#">
+                <span>◉</span>
+                Risk Insights
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="sidebar-profile">
+
+                <div class="profile-avatar">
+                    {{ name[0]|upper if name else 'P' }}
+                </div>
+
+                <div>
+                    <strong>{{ name }}</strong>
+                    <small>Patient Account</small>
+                </div>
+
+            </div>
+
+
+            <a
+                href="{{ url_for('logout') }}"
+                class="logout-link"
+            >
+                Logout
+            </a>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+    ====================================================== -->
+
+    <main class="dashboard-main">
+
+
+        <!-- TOP BAR -->
+
+        <header class="dashboard-topbar">
+
+            <div>
+
+                <h1>
+                    Patient Dashboard
+                </h1>
+
+                <p>
+                    Your personal cardiac decision-support workspace.
+                </p>
+
+            </div>
+
+
+            <div class="topbar-actions">
+
+                <div class="system-indicator">
+
+                    <span></span>
+
+                    AI System Ready
+
+                </div>
+
+
+                <div class="top-avatar">
+
+                    {{ name[0]|upper if name else 'P' }}
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =================================================
+             WELCOME
+        ================================================== -->
+
+        <section class="welcome-panel">
+
+            <div>
+
+                <span class="welcome-label">
+                    HEARTQAML PATIENT PORTAL
+                </span>
+
+
+                <h2>
+                    Welcome back, {{ name }}
+                </h2>
+
+
+                <p>
+                    Manage your medical reports, monitor your
+                    heart-risk assessments, view AI-assisted
+                    predictions and track clinical reviews.
+                </p>
+
+
+                <div class="quick-action">
+
+                    <a
+                        href="{{ url_for('upload_report') }}"
+                        class="btn dashboard-primary-btn"
+                    >
+                        Start New Assessment →
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="welcome-heart">
+                ♥
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             REAL DATABASE STATISTICS
+        ================================================== -->
+
+        <section class="dashboard-stats">
+
+
+            <!-- TOTAL REPORTS -->
+
+            <article class="stat-card">
+
+                <div class="stat-icon">
+                    ▣
+                </div>
+
+                <div>
+
+                    <span>
+                        Total Reports
+                    </span>
+
+                    <h3 class="dashboard-number">
+                        {{ total_reports }}
+                    </h3>
+
+                    <small>
+                        Medical reports uploaded
+                    </small>
+
+                </div>
+
+            </article>
+
+
+
+            <!-- AI ASSESSMENTS -->
+
+            <article class="stat-card">
+
+                <div class="stat-icon">
+                    AI
+                </div>
+
+                <div>
+
+                    <span>
+                        AI Assessments
+                    </span>
+
+                    <h3 class="dashboard-number">
+                        {{ total_predictions }}
+                    </h3>
+
+                    <small>
+                        Completed AI predictions
+                    </small>
+
+                </div>
+
+            </article>
+
+
+
+            <!-- LATEST RISK -->
+
+            <article class="stat-card">
+
+                <div class="stat-icon">
+                    ♥
+                </div>
+
+                <div>
+
+                    <span>
+                        Latest Risk
+                    </span>
+
+                    {% if latest_prediction %}
+
+                        <h3>
+                            {{ latest_prediction.risk_probability_percent }}%
+                        </h3>
+
+                        <small>
+
+                            <span
+                                class="risk-badge
+                                {% if latest_prediction.risk_level == 'HIGH' %}
+                                    risk-high
+                                {% elif latest_prediction.risk_level == 'MODERATE' %}
+                                    risk-moderate
+                                {% else %}
+                                    risk-low
+                                {% endif %}"
+                            >
+                                {{ latest_prediction.risk_level }}
+                            </span>
+
+                        </small>
+
+                    {% else %}
+
+                        <h3>
+                            --
+                        </h3>
+
+                        <small>
+                            No assessment available
+                        </small>
+
+                    {% endif %}
+
+                </div>
+
+            </article>
+
+
+
+            <!-- DOCTOR REVIEWS -->
+
+            <article class="stat-card">
+
+                <div class="stat-icon">
+                    ✓
+                </div>
+
+                <div>
+
+                    <span>
+                        Doctor Reviews
+                    </span>
+
+                    <h3 class="dashboard-number">
+                        {{ doctor_reviews }}
+                    </h3>
+
+                    <small>
+                        Completed clinical reviews
+                    </small>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+
+        <!-- =================================================
+             MAIN CONTENT GRID
+        ================================================== -->
+
+        <section class="dashboard-content-grid">
+
+
+            <!-- ASSESSMENT -->
+
+            <article class="dashboard-card assessment-card">
+
+                <div class="card-heading">
+
+                    <div>
+
+                        <span class="card-eyebrow">
+                            HEART HEALTH
+                        </span>
+
+                        <h3>
+                            Start a Heart Risk Assessment
+                        </h3>
+
+                    </div>
+
+
+                    <div class="card-icon-large">
+                        ♥
+                    </div>
+
+                </div>
+
+
+                <p class="card-description">
+
+                    Upload your ECG or supported medical report.
+                    HeartQAML extracts clinical information,
+                    validates the features and performs AI-assisted
+                    heart disease risk prediction.
+
+                </p>
+
+
+                <div class="assessment-options">
+
+
+                    <div class="assessment-option">
+
+                        <div class="option-icon">
+                            ▣
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Upload Medical Report
+                            </strong>
+
+                            <small>
+                                ECG, blood test, echo and stress-test
+                                reports are supported.
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="assessment-option">
+
+                        <div class="option-icon">
+                            AI
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Clinical Data Extraction
+                            </strong>
+
+                            <small>
+                                Relevant clinical features are
+                                automatically extracted.
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="assessment-option">
+
+                        <div class="option-icon">
+                            %
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                AI Risk Prediction
+                            </strong>
+
+                            <small>
+                                Hybrid KNN + Random Forest evaluates
+                                the available features.
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="assessment-option">
+
+                        <div class="option-icon">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Doctor Review
+                            </strong>
+
+                            <small>
+                                Results can be reviewed by a
+                                healthcare professional.
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <a
+                    href="{{ url_for('upload_report') }}"
+                    class="btn dashboard-primary-btn full-button"
+                >
+                    Begin Assessment
+                </a>
+
+            </article>
+
+
+
+            <!-- SYSTEM STATUS -->
+
+            <article class="dashboard-card">
+
+                <div class="card-heading">
+
+                    <div>
+
+                        <span class="card-eyebrow">
+                            SYSTEM STATUS
+                        </span>
+
+                        <h3>
+                            Intelligence Pipeline
+                        </h3>
+
+                    </div>
+
+                </div>
+
+
+                <div class="pipeline-status">
+
+
+                    <div class="pipeline-status-item completed">
+
+                        <div class="pipeline-status-icon">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                PDF Processing
+                            </strong>
+
+                            <small>
+                                Extraction ready
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="pipeline-line"></div>
+
+
+                    <div class="pipeline-status-item completed">
+
+                        <div class="pipeline-status-icon">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Feature Validation
+                            </strong>
+
+                            <small>
+                                11 clinical features
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="pipeline-line"></div>
+
+
+                    <div class="pipeline-status-item completed">
+
+                        <div class="pipeline-status-icon">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Hybrid ML
+                            </strong>
+
+                            <small>
+                                KNN + Random Forest
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="pipeline-line"></div>
+
+
+                    <div class="pipeline-status-item">
+
+                        <div class="pipeline-status-icon">
+                            Q
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Quantum Layer
+                            </strong>
+
+                            <small>
+                                QAML module — upcoming
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="pipeline-line"></div>
+
+
+                    <div class="pipeline-status-item">
+
+                        <div class="pipeline-status-icon">
+                            +
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Doctor Review
+                            </strong>
+
+                            <small>
+                                Clinical verification
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+
+        <!-- =================================================
+             RECENT ASSESSMENTS
+        ================================================== -->
+
+        <section class="dashboard-card recent-card">
+
+
+            <div class="recent-header">
+
+                <div>
+
+                    <span class="card-eyebrow">
+                        HISTORY
+                    </span>
+
+                    <h3>
+                        Recent Assessments
+                    </h3>
+
+                </div>
+
+
+                <a href="#">
+                    View all →
+                </a>
+
+            </div>
+
+
+            {% if recent_assessments %}
+
+                <div class="assessment-row"
+                     style="font-weight:700; color:#71808c;">
+
+                    <div>Report</div>
+                    <div>Risk</div>
+                    <div>Probability</div>
+                    <div>Status</div>
+                    <div>Date</div>
+
+                </div>
+
+
+                {% for assessment in recent_assessments %}
+
+                    <div class="assessment-row">
+
+                        <div>
+
+                            <div class="assessment-title">
+                                {{ assessment.report_type }}
+                            </div>
+
+                            <div class="assessment-small">
+                                {{ assessment.original_file_name }}
+                            </div>
+
+                        </div>
+
+
+                        <div>
+
+                            <span
+                                class="risk-badge
+                                {% if assessment.risk_level == 'HIGH' %}
+                                    risk-high
+                                {% elif assessment.risk_level == 'MODERATE' %}
+                                    risk-moderate
+                                {% else %}
+                                    risk-low
+                                {% endif %}"
+                            >
+                                {{ assessment.risk_level }}
+                            </span>
+
+                        </div>
+
+
+                        <div>
+
+                            <strong>
+                                {{ assessment.risk_probability_percent }}%
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            {% if assessment.prediction_status == 'COMPLETED' %}
+
+                                <span class="status-completed">
+                                    ✓ Completed
+                                </span>
+
+                            {% else %}
+
+                                {{ assessment.prediction_status }}
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="assessment-small">
+
+                            {{ assessment.created_at }}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+
+            {% else %}
+
+                <div class="empty-state">
+
+                    <div class="empty-icon">
+                        ♥
+                    </div>
+
+
+                    <h4>
+                        No assessments yet
+                    </h4>
+
+
+                    <p>
+                        Your heart-risk assessment history will
+                        appear here after your first report has
+                        been processed.
+                    </p>
+
+
+                    <a
+                        href="{{ url_for('upload_report') }}"
+                        class="btn btn-outline"
+                    >
+                        Start First Assessment
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+
+        <!-- =================================================
+             LATEST RESULT
+        ================================================== -->
+
+        {% if latest_prediction %}
+
+        <section class="dashboard-card">
+
+            <div class="recent-header">
+
+                <div>
+
+                    <span class="card-eyebrow">
+                        LATEST AI ASSESSMENT
+                    </span>
+
+                    <h3>
+                        Latest Prediction
+                    </h3>
+
+                </div>
+
+            </div>
+
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:20px;
+                flex-wrap:wrap;
+            ">
+
+                <div>
+
+                    <div class="assessment-small">
+                        AI Prediction
+                    </div>
+
+                    <h2>
+                        {% if latest_prediction.prediction_result == 1 %}
+                            Heart Disease Risk Detected
+                        {% else %}
+                            No Heart Disease Risk Detected
+                        {% endif %}
+                    </h2>
+
+                    <p>
+                        Model:
+                        <strong>
+                            {{ latest_prediction.model_name }}
+                        </strong>
+                        · Version
+                        {{ latest_prediction.model_version }}
+                    </p>
+
+                </div>
+
+
+                <div style="text-align:center;">
+
+                    <div style="
+                        font-size:34px;
+                        font-weight:800;
+                    ">
+                        {{ latest_prediction.risk_probability_percent }}%
+                    </div>
+
+                    <span
+                        class="risk-badge
+                        {% if latest_prediction.risk_level == 'HIGH' %}
+                            risk-high
+                        {% elif latest_prediction.risk_level == 'MODERATE' %}
+                            risk-moderate
+                        {% else %}
+                            risk-low
+                        {% endif %}"
+                    >
+                        {{ latest_prediction.risk_level }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        {% endif %}
+
+
+
+        <!-- =================================================
+             CLINICAL NOTICE
+        ================================================== -->
+
+        <div class="clinical-disclaimer">
+
+            <strong>
+                Clinical Decision Support:
+            </strong>
+
+            HeartQAML provides AI-assisted heart disease risk
+            assessment for clinical decision-support and research
+            purposes. Predictions are not a medical diagnosis and
+            must be interpreted by qualified healthcare
+            professionals.
+
+        </div>
+
+
+    </main>
+
+</div>
+
+</body>
+</html>

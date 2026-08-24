@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Upload Medical Report | HeartQAML
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+<body class="dashboard-body">
+
+<div class="dashboard-layout">
+
+    <!-- Sidebar -->
+
+    <aside class="sidebar">
+
+        <a
+            href="{{ url_for('patient_dashboard') }}"
+            class="sidebar-brand"
+        >
+
+            <div class="brand-icon">
+                ♥
+            </div>
+
+            <div>
+
+                <strong>HeartQAML</strong>
+
+                <small>
+                    Patient Portal
+                </small>
+
+            </div>
+
+        </a>
+
+    </aside>
+
+
+    <!-- Main -->
+
+    <main class="dashboard-main">
+
+        <header class="dashboard-topbar">
+
+            <div>
+
+                <h1>
+                    Upload Medical Report
+                </h1>
+
+                <p>
+                    Upload your ECG or medical report for AI analysis.
+                </p>
+
+            </div>
+
+        </header>
+
+
+        <section class="dashboard-card">
+
+            <form
+                method="POST"
+                enctype="multipart/form-data"
+            >
+
+                <div class="form-group">
+
+                    <label>
+                        Report Type
+                    </label>
+
+                    <select
+                        name="report_type"
+                        required
+                    >
+
+                        <option value="">
+                            Select Report
+                        </option>
+
+                        <option value="ECG">
+                            ECG
+                        </option>
+
+                        <option value="BLOOD_TEST">
+                            Blood Test
+                        </option>
+
+                        <option value="ECHO">
+                            Echo
+                        </option>
+
+                        <option value="STRESS_TEST">
+                            Stress Test
+                        </option>
+
+                        <option value="OTHER">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <br>
+
+
+                <div class="form-group">
+
+                    <label>
+
+                        Select File
+
+                    </label>
+
+                    <input
+                        type="file"
+                        name="report_file"
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        required
+                    >
+
+                </div>
+
+
+                <br>
+
+
+                <button
+                    class="btn btn-primary"
+                    type="submit"
+                >
+
+                    Upload Report
+
+                </button>
+
+            </form>
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+
+</html>
