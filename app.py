@@ -577,6 +577,7 @@ def doctor_register():
 
     return render_template("doctor_register.html")
 
+
 # ============================================================
 # ADMIN REGISTRATION
 # ============================================================
@@ -1488,9 +1489,199 @@ def doctor_dashboard():
 
 
 # ============================================================
+# DOCTOR CASE DETAILS
+# ============================================================
+
+@app.route("/doctor/case/<int:prediction_id>")
+def doctor_case_details(prediction_id):
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.prediction_result,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.created_at,
+
+                m.report_id,
+                m.original_file_name,
+                m.report_type,
+                m.file_path,
+                m.processing_status,
+
+                u.user_id,
+                u.full_name,
+                u.email,
+                u.phone,
+
+                e.extraction_id,
+                e.age,
+                e.sex,
+                e.chest_pain_type,
+                e.resting_bp,
+                e.cholesterol,
+                e.fasting_blood_sugar,
+                e.resting_ecg,
+                e.max_heart_rate,
+                e.exercise_angina,
+                e.oldpeak,
+                e.st_slope,
+                e.extraction_method,
+                e.validation_status AS extraction_status
+
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            JOIN users u
+                ON m.patient_id = u.user_id
+
+            WHERE p.prediction_id = %s
+
+            LIMIT 1
+            """,
+            (prediction_id,)
+        )
+
+        case = cursor.fetchone()
+
+        if case is None:
+            flash("Patient case not found.", "danger")
+            return redirect(url_for("doctor_dashboard"))
+
+        # ====================================================
+        # GET LOGGED-IN DOCTOR ID
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT doctor_id
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash(
+                "Doctor profile not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        doctor_id = doctor["doctor_id"]
+
+        # ====================================================
+        # GET EXISTING DOCTOR REVIEW
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                review_id,
+                review_status,
+                doctor_decision,
+                diagnosis_notes,
+                recommendations,
+                prediction_agreement,
+                reviewed_at
+
+            FROM doctor_reviews
+
+            WHERE prediction_id = %s
+            AND doctor_id = %s
+
+            ORDER BY review_id DESC
+
+            LIMIT 1
+            """,
+            (
+                prediction_id,
+                doctor_id
+            )
+        )
+
+        doctor_review = cursor.fetchone()
+
+        case["risk_probability_percent"] = round(
+                    float(case["risk_probability"]) * 100,
+                    2
+                )
+
+        if case["prediction_result"] == 1:
+                    case["prediction_label"] = (
+                        "Heart Disease Risk Detected"
+                    )
+        else:
+                    case["prediction_label"] = (
+                        "No Heart Disease Risk Detected"
+                    )
+
+        return render_template(
+            "doctor_case_details.html",
+            case=case,
+            doctor_review=doctor_review,
+            name=session.get("full_name")
+        )
+
+    except Exception as e:
+
+                print(
+                    "Doctor case details error:",
+                    e
+                )
+
+                flash(
+                    "Unable to load patient case.",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("doctor_dashboard")
+                )
+
+    finally:
+
+                cursor.close()
+                connection.close()
+
+
+# ============================================================
 # ADMIN DASHBOARD
 # ============================================================
 
+@app.route("/admin/dashboard")
 @app.route("/admin/dashboard")
 def admin_dashboard():
 

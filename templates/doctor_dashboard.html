@@ -1,27 +1,417 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Doctor Dashboard | Heart CDSS</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        .navbar {
+            background: #0f172a;
+            color: white;
+            padding: 18px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h2 {
+            font-size: 22px;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            background: #dc2626;
+            padding: 9px 18px;
+            border-radius: 6px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        .welcome {
+            margin-bottom: 30px;
+        }
+
+        .welcome h1 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .welcome p {
+            color: #64748b;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 35px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .card h3 {
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .card p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .modules {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .module {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .module h3 {
+            margin-bottom: 10px;
+        }
+
+        .module p {
+            color: #64748b;
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        .module button {
+            border: none;
+            background: #2563eb;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .module button:hover {
+            background: #1d4ed8;
+        }
+
+        @media (max-width: 800px) {
+            .cards,
+            .modules {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>Doctor Dashboard</h1>
+    <div class="navbar">
+        <h2>❤️ Heart Disease QAML - Doctor Portal</h2>
 
-    <h2>Welcome, Dr. {{ name }}</h2>
+        <a href="{{ url_for('logout') }}">
+            Logout
+        </a>
+    </div>
 
-    <ul>
-        <li>Patient Cases</li>
-        <li>AI Predictions</li>
-        <li>Clinical Feature Review</li>
-        <li>Medical Reports</li>
-        <li>Quantum-Assisted Results</li>
-        <li>Submit Clinical Review</li>
-    </ul>
+    <div class="container">
 
-    <a href="{{ url_for('logout') }}">
-        Logout
-    </a>
+        <div class="welcome">
+            <h1>Welcome, Dr. {{ name }}</h1>
+            <p>
+                Clinical Decision Support System — Doctor Dashboard
+            </p>
+        </div>
+
+        <!-- Dashboard Statistics -->
+
+        <div class="cards">
+
+            <div class="card">
+                <div class="number">{{ total_patients }}</div>
+                <h3>Patient Cases</h3>
+                <p>Patients requiring clinical review</p>
+            </div>
+
+            <div class="card">
+                <div class="number">{{ total_predictions }}</div>
+                <h3>AI Predictions</h3>
+                <p>Completed AI heart disease assessments</p>
+            </div>
+
+            <div class="card">
+                <div class="number">{{ pending_reviews }}</div>
+                <h3>Pending Reviews</h3>
+                <p>Cases waiting for doctor decision</p>
+            </div>
+
+        </div>
+
+        <!-- Doctor Modules -->
+
+        <div class="modules">
+
+            <div class="module">
+                <h3>👨‍⚕️ Patient Cases</h3>
+                <p>
+                    View assigned patients and examine their medical
+                    assessment history.
+                </p>
+
+                <button type="button">
+                    View Patients
+                </button>
+            </div>
+
+            <div class="module">
+                <h3>🤖 AI Predictions</h3>
+                <p>
+                    Review AI-generated heart disease predictions,
+                    probability scores and risk levels.
+                </p>
+
+                <button type="button">
+                    View Predictions
+                </button>
+            </div>
+
+            <div class="module">
+                <h3>📄 Medical Reports</h3>
+                <p>
+                    Access patient ECG, blood test, echo and stress-test
+                    reports uploaded to the system.
+                </p>
+
+                <button type="button">
+                    View Reports
+                </button>
+            </div>
+
+            <div class="module">
+                <h3>🧬 Clinical Features</h3>
+                <p>
+                    Examine the clinical features extracted from uploaded
+                    medical reports before making a decision.
+                </p>
+
+                <button type="button">
+                    Review Features
+                </button>
+            </div>
+
+            <div class="module">
+                <h3>⚛️ Quantum-Assisted Results</h3>
+                <p>
+                    View the QAML / quantum-assisted analysis results when
+                    available.
+                </p>
+
+                <button type="button">
+                    View QAML Results
+                </button>
+            </div>
+
+            <div class="module">
+                <h3>🩺 Clinical Review</h3>
+                <p>
+                    Submit your professional clinical decision and review
+                    comments for patient assessments.
+                </p>
+
+                <button type="button">
+                    Submit Review
+                </button>
+            </div>
+
+        </div>
+
+    </div>
 
 </body>
+        <!-- Recent Patient Cases -->
+
+        <div style="margin-top: 35px;">
+
+            <h2 style="margin-bottom: 18px;">
+                Recent Patient Cases
+            </h2>
+
+            {% if recent_cases %}
+
+            <div style="
+                background: white;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                overflow-x: auto;
+            ">
+
+                <table style="
+                    width: 100%;
+                    border-collapse: collapse;
+                    min-width: 900px;
+                ">
+
+                    <thead>
+                        <tr style="background: #f1f5f9;">
+
+                            <th style="padding: 14px; text-align: left;">
+                                Patient
+                            </th>
+
+                            <th style="padding: 14px; text-align: left;">
+                                Report
+                            </th>
+
+                            <th style="padding: 14px; text-align: left;">
+                                Prediction
+                            </th>
+
+                            <th style="padding: 14px; text-align: left;">
+                                Risk
+                            </th>
+
+                            <th style="padding: 14px; text-align: left;">
+                                Probability
+                            </th>
+
+                            <th style="padding: 14px; text-align: left;">
+                                Date
+                            </th>
+<th style="padding: 14px; text-align: left;">
+    Action
+</th>
+
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for case in recent_cases %}
+
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+
+                            <td style="padding: 14px;">
+                                <strong>
+                                    {{ case.full_name }}
+                                </strong>
+                                <br>
+                                <small style="color: #64748b;">
+                                    {{ case.email }}
+                                </small>
+                            </td>
+
+                            <td style="padding: 14px;">
+                                {{ case.report_type }}
+                                <br>
+                                <small style="color: #64748b;">
+                                    {{ case.original_file_name }}
+                                </small>
+                            </td>
+
+                            <td style="padding: 14px;">
+
+                                {% if case.prediction_result == 1 %}
+                                    Heart Disease Risk
+                                {% else %}
+                                    No Heart Disease Risk
+                                {% endif %}
+
+                            </td>
+
+                            <td style="padding: 14px;">
+
+                                {% if case.risk_level == "HIGH" %}
+
+                                    <strong style="color: #dc2626;">
+                                        HIGH
+                                    </strong>
+
+                                {% elif case.risk_level == "MODERATE" %}
+
+                                    <strong style="color: #d97706;">
+                                        MODERATE
+                                    </strong>
+
+                                {% else %}
+
+                                    <strong style="color: #16a34a;">
+                                        LOW
+                                    </strong>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td style="padding: 14px;">
+                                {{ case.risk_probability_percent }}%
+                            </td>
+
+                            <td style="padding: 14px;">
+                                {{ case.created_at }}
+                            </td>
+                            
+<td style="padding: 14px;">
+    <a href="{{ url_for('doctor_case_details', prediction_id=case.prediction_id) }}"
+       style="
+           display: inline-block;
+           background: #2563eb;
+           color: white;
+           text-decoration: none;
+           padding: 8px 14px;
+           border-radius: 6px;
+       ">
+        View Case
+    </a>
+</td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <div class="card">
+                <p>No completed patient assessments available.</p>
+            </div>
+
+            {% endif %}
+
+        </div>
 </html>
