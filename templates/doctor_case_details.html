@@ -702,7 +702,235 @@
         </div>
 
     </div>
+<!-- ========================================================= -->
+<!-- DOCTOR CLINICAL REVIEW -->
+<!-- ========================================================= -->
 
+<div class="card" style="margin-top: 25px;">
+
+    <h2>🩺 Doctor Clinical Review</h2>
+
+    {% if doctor_review %}
+
+    <div style="
+        background:#f0fdf4;
+        border:1px solid #86efac;
+        padding:18px;
+        border-radius:10px;
+        margin-bottom:25px;
+    ">
+
+        <h3 style="margin-bottom:15px;">
+            ✅ Review Completed
+        </h3>
+
+        <div class="info-row">
+            <span class="label">Review Status</span>
+            <span class="value" style="color:#16a34a;">
+    ✅ Reviewed
+</span>
+        </div>
+
+        <div class="info-row">
+            <span class="label">Doctor Decision</span>
+<span class="value">
+
+    {% if doctor_review.doctor_decision == 'LOW_RISK' %}
+        Low Risk
+
+    {% elif doctor_review.doctor_decision == 'MODERATE_RISK' %}
+        Moderate Risk
+
+    {% elif doctor_review.doctor_decision == 'HIGH_RISK' %}
+        High Risk
+
+    {% elif doctor_review.doctor_decision == 'INCONCLUSIVE' %}
+        Inconclusive
+
+    {% endif %}
+
+</span>
+        </div>
+
+ <div class="info-row">
+    <span class="label">AI Agreement</span>
+
+    <span class="value">
+
+        {% if doctor_review.prediction_agreement == 1 %}
+
+            <span style="color:#16a34a;">
+                ✅ Yes
+            </span>
+
+        {% elif doctor_review.prediction_agreement == 0 %}
+
+            <span style="color:#dc2626;">
+                ❌ No
+            </span>
+
+        {% else %}
+
+            <span style="color:#64748b;">
+                Not specified
+            </span>
+
+        {% endif %}
+
+    </span>
+</div>
+
+   
+        <div style="margin-top:15px;">
+            <strong>Diagnosis / Clinical Notes</strong>
+
+            <p style="
+                margin-top:8px;
+                color:#475569;
+                line-height:1.6;
+            ">
+                {{ doctor_review.diagnosis_notes or "No notes provided." }}
+            </p>
+        </div>
+
+        <div style="margin-top:15px;">
+            <strong>Recommendations</strong>
+
+            <p style="
+                margin-top:8px;
+                color:#475569;
+                line-height:1.6;
+            ">
+                {{ doctor_review.recommendations or "No recommendations provided." }}
+            </p>
+        </div>
+
+        <div style="margin-top:15px;">
+            <strong>Reviewed At</strong>
+
+            <p style="margin-top:8px; color:#475569;">
+                {{ doctor_review.reviewed_at }}
+            </p>
+        </div>
+
+    {% endif %}
+
+    <form method="POST"
+          action="{{ url_for('submit_doctor_review', prediction_id=case.prediction_id) }}">
+
+        <!-- DOCTOR DECISION -->
+        <div style="margin-bottom: 20px;">
+
+            <label style="display:block; font-weight:600; margin-bottom:8px;">
+                Clinical Decision
+            </label>
+
+            <select name="doctor_decision"
+                    required
+                    style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+
+                <option value="">-- Select Decision --</option>
+
+                <option value="LOW_RISK"
+                    {% if doctor_review and doctor_review.doctor_decision == 'LOW_RISK' %}selected{% endif %}>
+                    Low Risk
+                </option>
+
+                <option value="MODERATE_RISK"
+                    {% if doctor_review and doctor_review.doctor_decision == 'MODERATE_RISK' %}selected{% endif %}>
+                    Moderate Risk
+                </option>
+
+                <option value="HIGH_RISK"
+                    {% if doctor_review and doctor_review.doctor_decision == 'HIGH_RISK' %}selected{% endif %}>
+                    High Risk
+                </option>
+
+                <option value="INCONCLUSIVE"
+                    {% if doctor_review and doctor_review.doctor_decision == 'INCONCLUSIVE' %}selected{% endif %}>
+                    Inconclusive
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- DIAGNOSIS NOTES -->
+        <div style="margin-bottom:20px;">
+
+            <label style="display:block; font-weight:600; margin-bottom:8px;">
+                Diagnosis / Clinical Notes
+            </label>
+
+            <textarea name="diagnosis_notes"
+                      rows="5"
+                      placeholder="Enter your clinical observations and diagnosis notes..."
+                      style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; resize:vertical;">{{ doctor_review.diagnosis_notes if doctor_review else '' }}</textarea>
+
+        </div>
+
+
+        <!-- RECOMMENDATIONS -->
+        <div style="margin-bottom:20px;">
+
+            <label style="display:block; font-weight:600; margin-bottom:8px;">
+                Recommendations
+            </label>
+
+            <textarea name="recommendations"
+                      rows="5"
+                      placeholder="Enter recommendations, follow-up advice, tests, or treatment suggestions..."
+                      style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; resize:vertical;">{{ doctor_review.recommendations if doctor_review else '' }}</textarea>
+
+        </div>
+
+
+        <!-- AI AGREEMENT -->
+        <div style="margin-bottom:20px;">
+
+            <label style="display:block; font-weight:600; margin-bottom:10px;">
+                Do you agree with the AI prediction?
+            </label>
+
+            <label style="margin-right:25px;">
+                <input type="radio"
+                       name="prediction_agreement"
+                       value="YES"
+                       {% if doctor_review and doctor_review.prediction_agreement == 1 %}checked{% endif %}
+                       required>
+                Yes
+            </label>
+
+            <label>
+                <input type="radio"
+                       name="prediction_agreement"
+                       value="NO"
+                       {% if doctor_review and doctor_review.prediction_agreement == 0 %}checked{% endif %}>
+                No
+            </label>
+
+        </div>
+
+
+        <!-- SUBMIT -->
+        <button type="submit"
+                style="
+                    background:#2563eb;
+                    color:white;
+                    border:none;
+                    padding:12px 22px;
+                    border-radius:8px;
+                    font-size:15px;
+                    font-weight:600;
+                    cursor:pointer;
+                ">
+            💾 Save Clinical Review
+        </button>
+
+    </form>
+
+</div>
 </body>
 
 </html>

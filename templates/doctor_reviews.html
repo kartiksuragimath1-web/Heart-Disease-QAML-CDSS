@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Doctor Reviews | HeartQAML</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f7fb;
+            color: #17233c;
+        }
+
+        .navbar {
+            background: white;
+            padding: 18px 7%;
+            border-bottom: 1px solid #e5eaf0;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 23px;
+            font-weight: 800;
+            color: #116f6b;
+        }
+
+        .logout {
+            text-decoration: none;
+            background: #117d76;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+        }
+
+        .container {
+            width: 86%;
+            max-width: 1100px;
+            margin: 40px auto;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #117d76;
+            font-weight: 700;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #687994;
+            margin-bottom: 30px;
+        }
+
+        .review-card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            margin-bottom: 22px;
+
+            border: 1px solid #e5eaf0;
+
+            box-shadow:
+                0 10px 30px rgba(28,48,77,0.07);
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            margin-bottom: 20px;
+        }
+
+        .review-header h2 {
+            font-size: 20px;
+        }
+
+        .status {
+            background: #ddf7e9;
+            color: #087a50;
+
+            padding: 7px 13px;
+            border-radius: 20px;
+
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid #e8edf2;
+
+            padding: 14px;
+            border-radius: 10px;
+        }
+
+        .label {
+            font-size: 11px;
+            color: #8290a5;
+            text-transform: uppercase;
+            font-weight: 700;
+
+            margin-bottom: 6px;
+        }
+
+        .value {
+            font-weight: 700;
+        }
+
+        .decision {
+            padding: 18px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f1faf8,
+                    #f7f9ff
+                );
+
+            border: 1px solid #e0eceb;
+
+            border-radius: 12px;
+
+            margin-bottom: 18px;
+        }
+
+        .decision-title {
+            font-size: 12px;
+            color: #66758e;
+
+            text-transform: uppercase;
+            font-weight: 700;
+
+            margin-bottom: 7px;
+        }
+
+        .decision-value {
+            font-size: 23px;
+            font-weight: 800;
+        }
+
+        .section {
+            margin-top: 18px;
+        }
+
+        .section h3 {
+            font-size: 15px;
+            margin-bottom: 7px;
+        }
+
+        .section p {
+            color: #52627a;
+            line-height: 1.6;
+        }
+
+        .agreement-yes {
+            color: #16a34a;
+            font-weight: 800;
+        }
+
+        .agreement-no {
+            color: #dc2626;
+            font-weight: 800;
+        }
+
+        .empty {
+            background: white;
+            padding: 45px;
+            text-align: center;
+            border-radius: 18px;
+            border: 1px solid #e5eaf0;
+        }
+
+        .empty h2 {
+            margin-bottom: 10px;
+        }
+
+        .empty p {
+            color: #687994;
+        }
+
+        @media (max-width: 700px) {
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .review-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<nav class="navbar">
+
+    <div class="brand">
+        ❤️ HeartQAML
+    </div>
+
+    <a href="{{ url_for('logout') }}"
+       class="logout">
+        Logout
+    </a>
+
+</nav>
+
+
+<div class="container">
+
+
+    <a href="{{ url_for('patient_dashboard') }}"
+       class="back">
+
+        ← Back to Dashboard
+
+    </a>
+
+
+    <h1>
+        🩺 Doctor Reviews
+    </h1>
+
+    <p class="subtitle">
+        View clinical reviews and recommendations provided by your doctor.
+    </p>
+
+
+    {% if reviews %}
+
+
+        {% for review in reviews %}
+
+        <div class="review-card">
+
+
+            <div class="review-header">
+
+                <h2>
+                    Clinical Review #{{ review.review_id }}
+                </h2>
+
+                <span class="status">
+                    ✅ REVIEWED
+                </span>
+
+            </div>
+
+
+            <div class="info-grid">
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Report
+                    </div>
+
+                    <div class="value">
+                        {{ review.report_type }}
+                    </div>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        AI Risk
+                    </div>
+
+                    <div class="value">
+                        {{ review.risk_level }}
+                    </div>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Model
+                    </div>
+
+                    <div class="value">
+                        {{ review.model_name }}
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="decision">
+
+                <div class="decision-title">
+                    Doctor's Clinical Decision
+                </div>
+
+                <div class="decision-value">
+
+                    {% if review.doctor_decision == 'LOW_RISK' %}
+
+                        Low Risk
+
+                    {% elif review.doctor_decision == 'MODERATE_RISK' %}
+
+                        Moderate Risk
+
+                    {% elif review.doctor_decision == 'HIGH_RISK' %}
+
+                        High Risk
+
+                    {% elif review.doctor_decision == 'INCONCLUSIVE' %}
+
+                        Inconclusive
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <div class="section">
+
+                <h3>
+                    🤖 AI Prediction Agreement
+                </h3>
+
+                <p>
+
+                    {% if review.prediction_agreement == 1 %}
+
+                        <span class="agreement-yes">
+                            ✅ Doctor agrees with the AI prediction
+                        </span>
+
+                    {% elif review.prediction_agreement == 0 %}
+
+                        <span class="agreement-no">
+                            ❌ Doctor does not agree with the AI prediction
+                        </span>
+
+                    {% else %}
+
+                        Not specified
+
+                    {% endif %}
+
+                </p>
+
+            </div>
+
+
+            <div class="section">
+
+                <h3>
+                    📋 Clinical Notes
+                </h3>
+
+                <p>
+                    {{ review.diagnosis_notes or "No clinical notes provided." }}
+                </p>
+
+            </div>
+
+
+            <div class="section">
+
+                <h3>
+                    💡 Recommendations
+                </h3>
+
+                <p>
+                    {{ review.recommendations or "No recommendations provided." }}
+                </p>
+
+            </div>
+
+
+            <div class="section">
+
+                <h3>
+                    🕒 Reviewed At
+                </h3>
+
+                <p>
+                    {{ review.reviewed_at }}
+                </p>
+
+            </div>
+
+
+        </div>
+
+        {% endfor %}
+
+
+    {% else %}
+
+
+        <div class="empty">
+
+            <h2>
+                No Doctor Reviews Yet
+            </h2>
+
+            <p>
+                Your clinical reviews will appear here after a doctor reviews your assessment.
+            </p>
+
+        </div>
+
+
+    {% endif %}
+
+
+</div>
+
+
+</body>
+
+</html>

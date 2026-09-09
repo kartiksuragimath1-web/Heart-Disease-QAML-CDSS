@@ -5,7 +5,8 @@ from flask import (
     redirect,
     url_for,
     session,
-    flash
+    flash,
+    send_from_directory
 )
 
 import os
@@ -1108,36 +1109,27 @@ def patient_dashboard():
 
         doctor_reviews = 0
 
-        try:
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS doctor_reviews
+            FROM doctor_reviews dr
+            JOIN predictions p
+                ON dr.prediction_id = p.prediction_id
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+            WHERE m.patient_id = %s
+            AND dr.review_status = 'REVIEWED'
+            """,
+            (patient_id,)
+        )
 
-            cursor.execute(
-                """
-                SELECT COUNT(*) AS doctor_reviews
-                FROM predictions p
-                JOIN extracted_features e
-                    ON p.extraction_id = e.extraction_id
-                JOIN medical_reports m
-                    ON e.report_id = m.report_id
-                WHERE m.patient_id = %s
-                AND p.doctor_review_status = 'COMPLETED'
-                """,
-                (patient_id,)
-            )
+        review_result = cursor.fetchone()
 
-            review_result = cursor.fetchone()
-
-            if review_result:
-                doctor_reviews = (
-                    review_result["doctor_reviews"] or 0
-                )
-
-        except Exception:
-
-            # Doctor review field may not exist yet.
-            connection.rollback()
-
-            doctor_reviews = 0
-
+        doctor_reviews = (
+            review_result["doctor_reviews"] or 0
+        )
 
         # ====================================================
         # 6. RECENT ASSESSMENTS
@@ -1247,10 +1239,501 @@ def patient_dashboard():
         cursor.close()
         connection.close()
 
+# ============================================================
+# PATIENT DOCTOR REVIEWS
+# ============================================================
+
+@app.route("/patient/prediction-history")
+def patient_prediction_history():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "patient":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("patient_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.created_at,
+
+                e.extraction_id,
+
+                m.report_id,
+                m.report_type,
+                m.original_file_name
+
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            WHERE m.patient_id = %s
+
+            ORDER BY p.created_at DESC
+            """,
+            (session["user_id"],)
+        )
+
+        predictions = cursor.fetchall()
+
+        return render_template(
+            "prediction_history.html",
+            name=session.get("full_name"),
+            predictions=predictions
+        )
+
+    except Exception as e:
+        print("Prediction history error:", e)
+        flash("Unable to load prediction history.", "danger")
+        return redirect(url_for("patient_dashboard"))
+
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route("/patient/doctor-reviews")
+@app.route("/patient/doctor-reviews")
+def patient_doctor_reviews():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "patient":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("patient_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT
+                dr.review_id,
+                dr.review_status,
+                dr.doctor_decision,
+                dr.diagnosis_notes,
+                dr.recommendations,
+                dr.prediction_agreement,
+                dr.reviewed_at,
+
+                p.prediction_id,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.created_at,
+
+                m.report_type,
+                m.original_file_name
+
+            FROM doctor_reviews dr
+
+            JOIN predictions p
+                ON dr.prediction_id = p.prediction_id
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            WHERE m.patient_id = %s
+            AND dr.review_status = 'REVIEWED'
+
+            ORDER BY dr.reviewed_at DESC
+            """,
+            (session["user_id"],)
+        )
+
+        reviews = cursor.fetchall()
+        print("PATIENT DOCTOR REVIEWS:", reviews)
+
+        return render_template(
+            "doctor_reviews.html",
+            name=session.get("full_name"),
+            reviews=reviews
+        )
+
+    except Exception as e:
+
+        print(
+            "Patient doctor reviews error:",
+            e
+        )
+
+        flash(
+            "Unable to load doctor reviews.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("patient_dashboard")
+        )
+
+    finally:
+
+        cursor.close()
+        connection.close()
 
 # ============================================================
 # DOCTOR DASHBOARD
 # ============================================================
+@app.route("/doctor/predictions")
+def doctor_predictions():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.prediction_result,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.created_at,
+
+                e.extraction_id,
+
+                m.report_id,
+                m.report_type,
+                m.original_file_name,
+
+                u.user_id AS patient_id,
+                u.full_name AS patient_name
+
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            JOIN users u
+                ON m.patient_id = u.user_id
+
+            WHERE p.prediction_status = 'COMPLETED'
+
+            ORDER BY p.created_at DESC
+            """
+        )
+
+        predictions = cursor.fetchall()
+
+        return render_template(
+            "doctor_predictions.html",
+            name=session.get("full_name"),
+            predictions=predictions
+        )
+
+    except Exception as e:
+        print("Doctor predictions error:", e)
+        flash("Unable to load AI predictions.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route("/doctor/reports")
+def doctor_reports():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT
+                m.report_id,
+                m.patient_id,
+                m.report_type,
+                m.original_file_name,
+                m.processing_status,
+                m.uploaded_at,
+
+                u.full_name AS patient_name,
+
+                e.extraction_id,
+                e.validation_status,
+                e.extraction_method,
+                e.extraction_confidence
+
+            FROM medical_reports m
+
+            JOIN users u
+                ON m.patient_id = u.user_id
+
+            LEFT JOIN extracted_features e
+                ON m.report_id = e.report_id
+
+            ORDER BY m.uploaded_at DESC
+            """
+        )
+
+        reports = cursor.fetchall()
+
+        return render_template(
+            "doctor_reports.html",
+            name=session.get("full_name"),
+            reports=reports
+        )
+
+    except Exception as e:
+        print("Doctor reports error:", e)
+        flash("Unable to load medical reports.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route("/doctor/report/<int:report_id>")
+def doctor_view_report(report_id):
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_reports"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT
+                report_id,
+                stored_file_name,
+                original_file_name
+            FROM medical_reports
+            WHERE report_id = %s
+            """,
+            (report_id,)
+        )
+
+        report = cursor.fetchone()
+
+        if not report:
+            flash("Medical report not found.", "danger")
+            return redirect(url_for("doctor_reports"))
+
+        return send_from_directory(
+             "uploads/ecg",
+            report["stored_file_name"],
+            as_attachment=False
+        )
+
+    except Exception as e:
+        print("Doctor report view error:", e)
+        flash("Unable to open medical report.", "danger")
+        return redirect(url_for("doctor_reports"))
+
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route("/doctor/features")
+def doctor_features():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT
+                e.extraction_id,
+                e.report_id,
+
+                e.age,
+                e.sex,
+                e.chest_pain_type,
+                e.resting_bp,
+                e.cholesterol,
+                e.fasting_blood_sugar,
+                e.resting_ecg,
+                e.max_heart_rate,
+                e.exercise_angina,
+                e.oldpeak,
+                e.st_slope,
+
+                e.extraction_method,
+                e.validation_status,
+                e.extraction_confidence,
+                e.doctor_verified,
+                e.extracted_at,
+
+                m.report_type,
+                m.original_file_name,
+
+                u.user_id AS patient_id,
+                u.full_name AS patient_name
+
+            FROM extracted_features e
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            JOIN users u
+                ON m.patient_id = u.user_id
+
+            ORDER BY e.extracted_at DESC
+            """
+        )
+
+        features = cursor.fetchall()
+
+        return render_template(
+            "doctor_features.html",
+            name=session.get("full_name"),
+            features=features
+        )
+
+    except Exception as e:
+        print("Doctor features error:", e)
+        flash("Unable to load clinical features.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    finally:
+        cursor.close()
+        connection.close()
+@app.route("/doctor/features/<int:extraction_id>/verify", methods=["POST"])
+def verify_clinical_features(extraction_id):
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_features"))
+
+    cursor = connection.cursor()
+
+    try:
+
+        cursor.execute(
+            """
+            UPDATE extracted_features
+            SET doctor_verified = 1,
+                validation_status = 'VALID'
+            WHERE extraction_id = %s
+            """,
+            (extraction_id,)
+        )
+
+        connection.commit()
+
+        flash("Clinical features verified successfully.", "success")
+
+        return redirect(url_for("doctor_features"))
+
+    except Exception as e:
+
+        connection.rollback()
+
+        print("Clinical feature verification error:", e)
+
+        flash("Unable to verify clinical features.", "danger")
+
+        return redirect(url_for("doctor_features"))
+
+    finally:
+        cursor.close()
+        connection.close()
 
 @app.route("/doctor/dashboard")
 def doctor_dashboard():
@@ -1354,20 +1837,27 @@ def doctor_dashboard():
 
         high_risk_cases = result["high_risk_cases"] or 0
 
-
         # ====================================================
         # 5. PENDING REVIEWS
         # ====================================================
-        #
-        # Your current database may not yet contain a
-        # doctor-review column. Therefore we safely calculate
-        # pending cases from completed predictions.
-        #
-        # We will create the actual doctor-review workflow
-        # in the next step.
-        # ====================================================
 
-        pending_reviews = total_predictions
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS pending_reviews
+            FROM predictions p
+            WHERE p.prediction_status = 'COMPLETED'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM doctor_reviews dr
+                WHERE dr.prediction_id = p.prediction_id
+                AND dr.review_status = 'REVIEWED'
+            )
+            """
+        )
+
+        pending_result = cursor.fetchone()
+
+        pending_reviews = pending_result["pending_reviews"] or 0
 
 
         # ====================================================
@@ -1676,11 +2166,205 @@ def doctor_case_details(prediction_id):
                 cursor.close()
                 connection.close()
 
+# ============================================================
+# DOCTOR CLINICAL REVIEW
+# ============================================================
 
+@app.route("/doctor/case/<int:prediction_id>/review", methods=["POST"])
+def submit_doctor_review(prediction_id):
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(
+            url_for(
+                "doctor_case_details",
+                prediction_id=prediction_id
+            )
+        )
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        # GET DOCTOR ID
+        cursor.execute(
+            """
+            SELECT doctor_id
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash("Doctor profile not found.", "danger")
+            return redirect(url_for("doctor_dashboard"))
+
+        doctor_id = doctor["doctor_id"]
+
+        # GET FORM DATA
+        doctor_decision = request.form.get("doctor_decision")
+        diagnosis_notes = request.form.get("diagnosis_notes", "").strip()
+        recommendations = request.form.get("recommendations", "").strip()
+        prediction_agreement = request.form.get("prediction_agreement")
+
+        # VALIDATE DECISION
+        allowed_decisions = [
+            "LOW_RISK",
+            "MODERATE_RISK",
+            "HIGH_RISK",
+            "INCONCLUSIVE"
+        ]
+
+        if doctor_decision not in allowed_decisions:
+            flash("Please select a valid clinical decision.", "danger")
+            return redirect(
+                url_for(
+                    "doctor_case_details",
+                    prediction_id=prediction_id
+                )
+            )
+
+        # CONVERT AGREEMENT TO INTEGER
+        if prediction_agreement == "YES":
+            agreement_value = 1
+        elif prediction_agreement == "NO":
+            agreement_value = 0
+        else:
+            agreement_value = None
+
+        # CHECK EXISTING REVIEW
+        cursor.execute(
+            """
+            SELECT review_id
+            FROM doctor_reviews
+            WHERE prediction_id = %s
+            AND doctor_id = %s
+            ORDER BY review_id DESC
+            LIMIT 1
+            """,
+            (prediction_id, doctor_id)
+        )
+
+        existing_review = cursor.fetchone()
+
+        if existing_review:
+
+            # UPDATE EXISTING REVIEW
+            cursor.execute(
+                """
+                UPDATE doctor_reviews
+                SET
+                    review_status = 'REVIEWED',
+                    doctor_decision = %s,
+                    diagnosis_notes = %s,
+                    recommendations = %s,
+                    prediction_agreement = %s,
+                    reviewed_at = CURRENT_TIMESTAMP
+                WHERE review_id = %s
+                """,
+                (
+                    doctor_decision,
+                    diagnosis_notes,
+                    recommendations,
+                    agreement_value,
+                    existing_review["review_id"]
+                )
+            )
+
+        else:
+
+            # CREATE NEW REVIEW
+            cursor.execute(
+                """
+                INSERT INTO doctor_reviews
+                (
+                    prediction_id,
+                    doctor_id,
+                    review_status,
+                    doctor_decision,
+                    diagnosis_notes,
+                    recommendations,
+                    prediction_agreement,
+                    reviewed_at
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    'REVIEWED',
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    CURRENT_TIMESTAMP
+                )
+                """,
+                (
+                    prediction_id,
+                    doctor_id,
+                    doctor_decision,
+                    diagnosis_notes,
+                    recommendations,
+                    agreement_value
+                )
+            )
+
+        connection.commit()
+
+        flash(
+            "Doctor clinical review saved successfully.",
+            "success"
+        )
+
+        return redirect(
+            url_for(
+                "doctor_case_details",
+                prediction_id=prediction_id
+            )
+        )
+
+    except Exception as e:
+
+        connection.rollback()
+
+        print(
+            "Doctor review error:",
+            e
+        )
+
+        flash(
+            "Unable to save doctor review.",
+            "danger"
+        )
+
+        return redirect(
+            url_for(
+                "doctor_case_details",
+                prediction_id=prediction_id
+            )
+        )
+
+    finally:
+
+        cursor.close()
+        connection.close()
 # ============================================================
 # ADMIN DASHBOARD
 # ============================================================
-
 @app.route("/admin/dashboard")
 @app.route("/admin/dashboard")
 def admin_dashboard():
@@ -2239,6 +2923,31 @@ def prediction_result(extraction_id):
             return redirect(
                 url_for("patient_dashboard")
             )
+
+
+        # ====================================================
+        # DOCTOR REVIEW
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                review_status,
+                doctor_decision,
+                diagnosis_notes,
+                recommendations,
+                prediction_agreement,
+                reviewed_at
+            FROM doctor_reviews
+            WHERE prediction_id = %s
+            ORDER BY review_id DESC
+            LIMIT 1
+            """,
+            (prediction["prediction_id"],)
+        )
+
+        prediction["doctor_review"] = cursor.fetchone()
+
 
         # Convert probability to percentage
         prediction["risk_probability_percent"] = round(

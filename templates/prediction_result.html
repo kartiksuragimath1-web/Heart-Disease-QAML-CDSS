@@ -923,19 +923,31 @@
                 </div>
 
 
-                <div class="meta-box">
+ <div class="meta-box">
 
-                    <div class="meta-label">
-                        Doctor Review
-                    </div>
+    <div class="meta-label">
+        Doctor Review
+    </div>
 
-                    <div class="meta-value">
+    <div class="meta-value">
 
-                        Pending
+        {% if prediction.doctor_review %}
 
-                    </div>
+            {% if prediction.doctor_review.review_status == 'REVIEWED' %}
+                ✅ Reviewed
+            {% else %}
+                ⏳ {{ prediction.doctor_review.review_status }}
+            {% endif %}
 
-                </div>
+        {% else %}
+
+            ⏳ Pending
+
+        {% endif %}
+
+    </div>
+
+</div>
 
 
             </div>
@@ -1173,6 +1185,150 @@
 
     </section>
 
+        <!-- =====================================================
+         DOCTOR CLINICAL REVIEW
+    ===================================================== -->
+
+    {% if prediction.doctor_review %}
+
+    <section class="section">
+
+        <div class="section-header">
+
+            <h2>
+                🩺 Doctor Clinical Review
+            </h2>
+
+            <div class="confidence">
+                {{ prediction.doctor_review.review_status }}
+            </div>
+
+        </div>
+
+
+        <div class="card" style="padding:30px;">
+
+
+            <!-- DOCTOR DECISION -->
+
+            <div class="diagnosis-box">
+
+                <div class="diagnosis-title">
+                    Doctor's Clinical Decision
+                </div>
+
+                <div class="diagnosis-result">
+
+                    {% if prediction.doctor_review.doctor_decision == 'LOW_RISK' %}
+
+                        Low Risk
+
+                    {% elif prediction.doctor_review.doctor_decision == 'MODERATE_RISK' %}
+
+                        Moderate Risk
+
+                    {% elif prediction.doctor_review.doctor_decision == 'HIGH_RISK' %}
+
+                        High Risk
+
+                    {% elif prediction.doctor_review.doctor_decision == 'INCONCLUSIVE' %}
+
+                        Inconclusive
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <!-- AI AGREEMENT -->
+
+            <div class="meta-box" style="margin-bottom:15px;">
+
+                <div class="meta-label">
+                    AI Prediction Agreement
+                </div>
+
+                <div class="meta-value">
+
+                    {% if prediction.doctor_review.prediction_agreement == 1 %}
+
+                        ✅ Doctor agrees with AI prediction
+
+                    {% elif prediction.doctor_review.prediction_agreement == 0 %}
+
+                        ❌ Doctor does not agree with AI prediction
+
+                    {% else %}
+
+                        Not specified
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <!-- DIAGNOSIS NOTES -->
+
+            <div class="meta-box" style="margin-bottom:15px;">
+
+                <div class="meta-label">
+                    Clinical Notes
+                </div>
+
+                <div class="meta-value"
+                     style="line-height:1.6;">
+
+                    {{ prediction.doctor_review.diagnosis_notes or "No clinical notes provided." }}
+
+                </div>
+
+            </div>
+
+
+            <!-- RECOMMENDATIONS -->
+
+            <div class="meta-box" style="margin-bottom:15px;">
+
+                <div class="meta-label">
+                    Doctor Recommendations
+                </div>
+
+                <div class="meta-value"
+                     style="line-height:1.6;">
+
+                    {{ prediction.doctor_review.recommendations or "No recommendations provided." }}
+
+                </div>
+
+            </div>
+
+
+            <!-- REVIEWED TIME -->
+
+            <div class="meta-box">
+
+                <div class="meta-label">
+                    Reviewed At
+                </div>
+
+                <div class="meta-value">
+
+                    {{ prediction.doctor_review.reviewed_at }}
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+    {% endif %}
 
     <!-- =====================================================
          CLINICAL NOTICE
