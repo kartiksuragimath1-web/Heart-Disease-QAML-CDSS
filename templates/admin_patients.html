@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Patients | HeartQAML</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f8f9;
+            color: #17233c;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5eeee;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #087f82;
+        }
+
+        .container {
+            width: 86%;
+            margin: 40px auto;
+        }
+
+        h1 {
+            font-size: 34px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #667895;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            background: #f0f7f7;
+            color: #087f82;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        tr:hover {
+            background: #fafdfd;
+        }
+
+        .status-active {
+            color: #087f82;
+            font-weight: bold;
+        }
+
+        .status-inactive {
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 25px;
+            padding: 11px 20px;
+            background: #087f82;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <div class="logo">♥ HeartQAML</div>
+
+    <a href="{{ url_for('logout') }}"
+       style="background:#087f82;color:white;padding:12px 22px;
+              border-radius:8px;text-decoration:none;font-weight:bold;">
+        Logout
+    </a>
+</div>
+
+<div class="container">
+
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">
+        ← Back to Dashboard
+    </a>
+
+    <h1>Manage Patients</h1>
+
+    <div class="subtitle">
+        View and monitor registered patient accounts.
+    </div>
+
+    <div class="card">
+
+        {% if patients %}
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Registered</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for patient in patients %}
+
+                <tr>
+
+                    <td>{{ patient.user_id }}</td>
+
+                    <td>
+                        <strong>{{ patient.full_name }}</strong>
+                    </td>
+
+                    <td>{{ patient.email }}</td>
+
+                    <td>
+                        {{ patient.phone or "Not provided" }}
+                    </td>
+
+                    <td>
+                        {% if patient.is_active %}
+                            <span class="status-active">● Active</span>
+                        {% else %}
+                            <span class="status-inactive">● Inactive</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ patient.created_at }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+        <div class="empty">
+            No registered patients found.
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>System Predictions | HeartQAML</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f8f9;
+            color: #17233c;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5eeee;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #087f82;
+        }
+
+        .container {
+            width: 90%;
+            margin: 40px auto;
+        }
+
+        h1 {
+            font-size: 34px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #667895;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1250px;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            background: #f0f7f7;
+            color: #087f82;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eeeeee;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background: #fafdfd;
+        }
+
+        .positive {
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        .negative {
+            color: #087f82;
+            font-weight: bold;
+        }
+
+        .low {
+            color: #087f82;
+            font-weight: bold;
+        }
+
+        .moderate {
+            color: #d98b00;
+            font-weight: bold;
+        }
+
+        .high {
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        .completed {
+            color: #087f82;
+            font-weight: bold;
+        }
+
+        .status-other {
+            color: #777;
+            font-weight: bold;
+        }
+
+        .qaml {
+            color: #6b3fa0;
+            font-weight: bold;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 25px;
+            padding: 11px 20px;
+            background: #087f82;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+
+    <div class="logo">♥ HeartQAML</div>
+
+    <a href="{{ url_for('logout') }}"
+       style="background:#087f82;color:white;padding:12px 22px;
+              border-radius:8px;text-decoration:none;font-weight:bold;">
+        Logout
+    </a>
+
+</div>
+
+<div class="container">
+
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">
+        ← Back to Dashboard
+    </a>
+
+    <h1>System Predictions</h1>
+
+    <div class="subtitle">
+        Monitor AI and QAML prediction activity across the system.
+    </div>
+
+    <div class="card">
+
+        {% if predictions %}
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Prediction ID</th>
+                    <th>Patient</th>
+                    <th>Model</th>
+                    <th>AI Result</th>
+                    <th>AI Probability</th>
+                    <th>Risk Level</th>
+                    <th>QAML Result</th>
+                    <th>QAML Quantum Score</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for prediction in predictions %}
+
+                <tr>
+
+                    <td>
+                        {{ prediction.prediction_id }}
+                    </td>
+
+                    <td>
+                        <strong>
+                            {{ prediction.patient_name or "Unknown Patient" }}
+                        </strong>
+                    </td>
+
+                    <td>
+                        {{ prediction.model_name }}
+                        <br>
+                        <small>v{{ prediction.model_version }}</small>
+                    </td>
+
+                    <td>
+                        {% if prediction.prediction_result == 1 %}
+                            <span class="positive">
+                                Positive
+                            </span>
+                        {% else %}
+                            <span class="negative">
+                                Negative
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ "%.2f"|format(prediction.risk_probability * 100) }}%
+                    </td>
+
+                    <td>
+
+                        {% if prediction.risk_level == "LOW" %}
+
+                            <span class="low">
+                                LOW
+                            </span>
+
+                        {% elif prediction.risk_level == "MODERATE" %}
+
+                            <span class="moderate">
+                                MODERATE
+                            </span>
+
+                        {% elif prediction.risk_level == "HIGH" %}
+
+                            <span class="high">
+                                HIGH
+                            </span>
+
+                        {% else %}
+
+                            {{ prediction.risk_level or "N/A" }}
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if prediction.qaml_prediction is not none %}
+
+                            <span class="qaml">
+                                {{ prediction.qaml_prediction }}
+                            </span>
+
+                        {% else %}
+
+                            N/A
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if prediction.qaml_quantum_score is not none %}
+
+                            <span class="qaml">
+                                {{ "%.8f"|format(prediction.qaml_quantum_score) }}
+                            </span>
+
+                        {% else %}
+
+                            N/A
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if prediction.prediction_status == "COMPLETED" %}
+
+                            <span class="completed">
+                                ● COMPLETED
+                            </span>
+
+                        {% else %}
+
+                            <span class="status-other">
+                                {{ prediction.prediction_status or "N/A" }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ prediction.created_at }}
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+        <div class="empty">
+            No prediction records found.
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>System Logs | HeartQAML</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f8f9;
+            color: #17233c;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5eeee;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #087f82;
+        }
+
+        .container {
+            width: 90%;
+            margin: 40px auto;
+        }
+
+        h1 {
+            font-size: 34px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #667895;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            background: #f0f7f7;
+            color: #087f82;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eeeeee;
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background: #fafdfd;
+        }
+
+        .role {
+            font-weight: bold;
+            color: #6b3fa0;
+        }
+
+        .action {
+            font-weight: bold;
+            color: #087f82;
+        }
+
+        .description {
+            color: #667895;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 25px;
+            padding: 11px 20px;
+            background: #087f82;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .log-id {
+            font-weight: bold;
+        }
+
+        .ip {
+            font-family: monospace;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+
+    <div class="logo">♥ HeartQAML</div>
+
+    <a href="{{ url_for('logout') }}"
+       style="background:#087f82;color:white;padding:12px 22px;
+              border-radius:8px;text-decoration:none;font-weight:bold;">
+        Logout
+    </a>
+
+</div>
+
+<div class="container">
+
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">
+        ← Back to Dashboard
+    </a>
+
+    <h1>System Logs</h1>
+
+    <div class="subtitle">
+        Monitor important system events and administrative activity.
+    </div>
+
+    <div class="card">
+
+        {% if logs %}
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Log ID</th>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Action</th>
+                    <th>Description</th>
+                    <th>IP Address</th>
+                    <th>Date & Time</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for log in logs %}
+
+                <tr>
+
+                    <td class="log-id">
+                        {{ log.log_id }}
+                    </td>
+
+                    <td>
+                        {{ log.full_name or "System" }}
+                    </td>
+
+                    <td class="role">
+                        {{ log.role or "System" }}
+                    </td>
+
+                    <td class="action">
+                        {{ log.action }}
+                    </td>
+
+                    <td class="description">
+                        {{ log.description or "No description" }}
+                    </td>
+
+                    <td class="ip">
+                        {{ log.ip_address or "N/A" }}
+                    </td>
+
+                    <td>
+                        {{ log.created_at }}
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+        <div class="empty">
+            No system logs found.
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

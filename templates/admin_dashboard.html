@@ -1,27 +1,535 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Admin Dashboard | Heart CDSS</title>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard | HeartQAML</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f7fbfc,
+                    #eef8f7,
+                    #f4f7ff
+                );
+
+            color: #17233c;
+            min-height: 100vh;
+        }
+
+        /* NAVBAR */
+
+        .navbar {
+            height: 78px;
+
+            background: white;
+
+            border-bottom:
+                1px solid #e5eaf0;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 0 7%;
+        }
+
+        .brand {
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            font-size: 24px;
+
+            font-weight: 800;
+
+            color: #116f6b;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+
+            border-radius: 12px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            color: white;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #0e817a,
+                    #2476d2
+                );
+
+            font-size: 21px;
+        }
+
+        .logout {
+            padding: 11px 19px;
+
+            border-radius: 10px;
+
+            background: #117d76;
+
+            color: white;
+
+            text-decoration: none;
+
+            font-weight: 700;
+        }
+
+        /* PAGE */
+
+        .page {
+            width: 86%;
+
+            max-width: 1250px;
+
+            margin: 45px auto 70px;
+        }
+
+        .eyebrow {
+            display: inline-block;
+
+            padding: 8px 15px;
+
+            border-radius: 30px;
+
+            background: #dff8f4;
+
+            color: #08766e;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 40px;
+
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #687994;
+
+            margin-bottom: 35px;
+
+            font-size: 16px;
+        }
+
+        /* STAT CARDS */
+
+        .stats {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 18px;
+
+            margin-bottom: 35px;
+        }
+
+        .stat-card {
+            background: white;
+
+            border:
+                1px solid #e7ebf1;
+
+            border-radius: 20px;
+
+            padding: 25px;
+
+            box-shadow:
+                0 12px 35px
+                rgba(28,48,77,0.07);
+        }
+
+        .stat-title {
+            color: #75839b;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            text-transform: uppercase;
+
+            letter-spacing: .6px;
+        }
+
+        .stat-value {
+            font-size: 34px;
+
+            font-weight: 800;
+
+            margin-top: 10px;
+
+            color: #17233c;
+        }
+
+        /* MANAGEMENT */
+
+        .section-title {
+            font-size: 24px;
+
+            margin-bottom: 18px;
+        }
+
+        .management {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 18px;
+        }
+
+        .management-card {
+            background: white;
+
+            border:
+                1px solid #e7ebf1;
+
+            border-radius: 18px;
+
+            padding: 25px;
+
+            box-shadow:
+                0 10px 30px
+                rgba(28,48,77,0.06);
+        }
+
+        .management-card h3 {
+            margin-bottom: 8px;
+        }
+
+        .management-card p {
+            color: #75839b;
+
+            font-size: 14px;
+
+            line-height: 1.5;
+
+            margin-bottom: 18px;
+        }
+
+        .btn {
+            display: inline-block;
+
+            padding: 11px 17px;
+
+            border-radius: 10px;
+
+            background: #117d76;
+
+            color: white;
+
+            text-decoration: none;
+
+            font-weight: 700;
+
+            font-size: 13px;
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 850px) {
+
+            .stats,
+            .management {
+                grid-template-columns: 1fr;
+            }
+
+            .page {
+                width: 92%;
+            }
+
+        }
+
+    </style>
+
 </head>
+
 
 <body>
 
-    <h1>Admin Dashboard</h1>
 
-    <h2>Welcome, {{ name }}</h2>
+<nav class="navbar">
 
-    <ul>
-        <li>Manage Patients</li>
-        <li>Manage Doctors</li>
-        <li>Verify Doctors</li>
-        <li>System Predictions</li>
-        <li>Model Information</li>
-        <li>System Logs</li>
-    </ul>
+    <div class="brand">
 
-    <a href="{{ url_for('logout') }}">
+        <div class="brand-icon">
+            ♥
+        </div>
+
+        HeartQAML
+
+    </div>
+
+
+    <a
+        href="{{ url_for('logout') }}"
+        class="logout">
+
         Logout
+
     </a>
 
+</nav>
+
+
+<main class="page">
+
+
+    <div class="eyebrow">
+        ADMIN CONTROL CENTER
+    </div>
+
+
+    <h1>
+        Welcome, {{ name }}
+    </h1>
+
+
+    <p class="subtitle">
+
+        Manage the HeartQAML Clinical Decision Support System
+        and monitor system activity.
+
+    </p>
+
+
+    <!-- STATISTICS -->
+
+    <div class="stats">
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                Total Patients
+            </div>
+
+            <div class="stat-value">
+                {{ total_patients }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                Total Doctors
+            </div>
+
+            <div class="stat-value">
+                {{ total_doctors }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                Verified Doctors
+            </div>
+
+            <div class="stat-value">
+                {{ verified_doctors }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                Medical Reports
+            </div>
+
+            <div class="stat-value">
+                {{ total_reports }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                AI Predictions
+            </div>
+
+            <div class="stat-value">
+                {{ total_predictions }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                Pending Reviews
+            </div>
+
+            <div class="stat-value">
+                {{ pending_reviews }}
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- MANAGEMENT -->
+
+    <h2 class="section-title">
+        System Management
+    </h2>
+
+
+    <div class="management">
+
+
+        <div class="management-card">
+
+            <h3>
+                👥 Manage Patients
+            </h3>
+
+            <p>
+                View registered patients and manage
+                patient accounts.
+            </p>
+
+            <a href="{{ url_for('admin_patients') }}" class="btn">Manage Patients</a>
+
+        </div>
+
+
+        <div class="management-card">
+
+            <h3>
+                🩺 Manage Doctors
+            </h3>
+
+            <p>
+                View doctors and monitor their
+                verification status.
+            </p>
+
+            <a href="{{ url_for('admin_doctors') }}" class="btn">Manage Doctors</a>
+
+        </div>
+
+
+        <div class="management-card">
+
+            <h3>
+                ✓ Verify Doctors
+            </h3>
+
+            <p>
+                Review and verify registered doctor
+                profiles.
+            </p>
+
+            <a href="{{ url_for('verify_doctors') }}" class="btn">Verify Doctors</a>
+
+        </div>
+
+
+        <div class="management-card">
+
+            <h3>
+                🤖 System Predictions
+            </h3>
+
+            <p>
+                Monitor AI and QAML prediction activity.
+            </p>
+
+            <a href="{{ url_for('admin_predictions') }}" class="btn">View Predictions</a>
+
+        </div>
+
+
+        <div class="management-card">
+
+            <h3>
+                🧠 Model Information
+            </h3>
+
+            <p>
+                View information about the Hybrid ML
+                and QAML models.
+            </p>
+
+            <a href="{{ url_for('admin_model_info') }}" class="btn">Model Information</a>
+
+        </div>
+
+
+        <div class="management-card">
+
+            <h3>
+                📋 System Logs
+            </h3>
+
+            <p>
+                Monitor important system events and
+                administrative activity.
+            </p>
+
+            <a href="{{ url_for('admin_logs') }}" class="btn">View Logs</a>
+
+        </div>
+
+
+    </div>
+
+
+</main>
+
+
 </body>
+
 </html>

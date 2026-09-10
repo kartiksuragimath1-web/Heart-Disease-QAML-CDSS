@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Doctors | HeartQAML</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f8f9;
+            color: #17233c;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5eeee;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #087f82;
+        }
+
+        .container {
+            width: 86%;
+            margin: 40px auto;
+        }
+
+        h1 {
+            font-size: 34px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #667895;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1100px;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            background: #f0f7f7;
+            color: #087f82;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        tr:hover {
+            background: #fafdfd;
+        }
+
+        .verified {
+            color: #087f82;
+            font-weight: bold;
+        }
+
+        .pending {
+            color: #d98b00;
+            font-weight: bold;
+        }
+
+        .rejected {
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        .not-available {
+            color: #777;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 25px;
+            padding: 11px 20px;
+            background: #087f82;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+
+    <div class="logo">♥ HeartQAML</div>
+
+    <a href="{{ url_for('logout') }}"
+       style="background:#087f82;color:white;padding:12px 22px;
+              border-radius:8px;text-decoration:none;font-weight:bold;">
+        Logout
+    </a>
+
+</div>
+
+<div class="container">
+
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">
+        ← Back to Dashboard
+    </a>
+
+    <h1>Manage Doctors</h1>
+
+    <div class="subtitle">
+        View registered doctors and monitor their verification status.
+    </div>
+
+    <div class="card">
+
+        {% if doctors %}
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Doctor Name</th>
+                    <th>Email</th>
+                    <th>Specialization</th>
+                    <th>Qualification</th>
+                    <th>Hospital</th>
+                    <th>Experience</th>
+                    <th>License</th>
+                    <th>Verification</th>
+                    <th>Account</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for doctor in doctors %}
+
+                <tr>
+
+                    <td>{{ doctor.user_id }}</td>
+
+                    <td>
+                        <strong>{{ doctor.full_name }}</strong>
+                    </td>
+
+                    <td>{{ doctor.email }}</td>
+
+                    <td>
+                        {{ doctor.specialization or "Not provided" }}
+                    </td>
+
+                    <td>
+                        {{ doctor.qualification or "Not provided" }}
+                    </td>
+
+                    <td>
+                        {{ doctor.hospital or "Not provided" }}
+                    </td>
+
+                    <td>
+                        {% if doctor.experience_years is not none %}
+                            {{ doctor.experience_years }} years
+                        {% else %}
+                            Not provided
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ doctor.license_number or "Not provided" }}
+                    </td>
+
+                    <td>
+
+                        {% if doctor.verification_status == "VERIFIED" %}
+
+                            <span class="verified">
+                                ● VERIFIED
+                            </span>
+
+                        {% elif doctor.verification_status == "PENDING" %}
+
+                            <span class="pending">
+                                ● PENDING
+                            </span>
+
+                        {% elif doctor.verification_status == "REJECTED" %}
+
+                            <span class="rejected">
+                                ● REJECTED
+                            </span>
+
+                        {% else %}
+
+                            <span class="not-available">
+                                ● NOT AVAILABLE
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if doctor.is_active %}
+
+                            <span class="verified">
+                                ● Active
+                            </span>
+
+                        {% else %}
+
+                            <span class="rejected">
+                                ● Inactive
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+        <div class="empty">
+            No registered doctors found.
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

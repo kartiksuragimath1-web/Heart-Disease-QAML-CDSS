@@ -22,6 +22,37 @@ from auth import register_patient, authenticate_user
 from database import get_db_connection
 
 app = Flask(__name__)
+def create_system_log(action, description, user_id=None):
+    connection = get_db_connection()
+
+    if connection is None:
+        return
+
+    cursor = connection.cursor()
+
+    try:
+        ip_address = request.remote_addr
+
+        cursor.execute("""
+            INSERT INTO system_logs
+            (user_id, action, description, ip_address)
+            VALUES (%s, %s, %s, %s)
+        """, (
+            user_id,
+            action,
+            description,
+            ip_address
+        ))
+
+        connection.commit()
+
+    except Exception as e:
+        connection.rollback()
+        print("System log error:", e)
+
+    finally:
+        cursor.close()
+        connection.close()
 # ============================================================
 # FILE UPLOAD CONFIGURATION
 # ============================================================
@@ -49,12 +80,12 @@ def allowed_file(filename):
         filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
     )
 
-app = Flask(__name__)
+
 
 # Required for Flask sessions
-# Later we will move this to .env
-app.secret_key = "heart-cdss-development-secret-key"
 
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
 # ============================================================
 # HOME
@@ -819,6 +850,12 @@ def admin_login():
                 session["email"] = user["email"]
                 session["role"] = "admin"
 
+                create_system_log(
+                    "ADMIN_LOGIN",
+                    "Admin logged into the system.",
+                    user["user_id"]
+                )
+
                 flash(
                     "Admin login successful.",
                     "success"
@@ -1239,10 +1276,75 @@ def patient_dashboard():
         cursor.close()
         connection.close()
 
+
+# ============================================================
+# PATIENT MEDICAL REPORTS
+# ============================================================
+
+@app.route("/patient/reports")
+def patient_reports():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "patient":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("patient_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT
+                report_id,
+                report_type,
+                original_file_name,
+                processing_status,
+                uploaded_at
+            FROM medical_reports
+            WHERE patient_id = %s
+            ORDER BY uploaded_at DESC
+            """,
+            (session["user_id"],)
+        )
+
+        reports = cursor.fetchall()
+
+        return render_template(
+            "patient_reports.html",
+            name=session.get("full_name"),
+            reports=reports
+        )
+
+    except Exception as e:
+
+        print("Patient reports error:", e)
+
+        flash(
+            "Unable to load medical reports.",
+            "danger"
+        )
+
+        return redirect(url_for("patient_dashboard"))
+
+    finally:
+
+        cursor.close()
+        connection.close()
+
+
 # ============================================================
 # PATIENT DOCTOR REVIEWS
 # ============================================================
-
 @app.route("/patient/prediction-history")
 def patient_prediction_history():
 
@@ -1313,7 +1415,7 @@ def patient_prediction_history():
         cursor.close()
         connection.close()
 
-@app.route("/patient/doctor-reviews")
+
 @app.route("/patient/doctor-reviews")
 def patient_doctor_reviews():
 
@@ -1376,7 +1478,7 @@ def patient_doctor_reviews():
         )
 
         reviews = cursor.fetchall()
-        print("PATIENT DOCTOR REVIEWS:", reviews)
+   
 
         return render_template(
             "doctor_reviews.html",
@@ -2368,7 +2470,6 @@ def submit_doctor_review(prediction_id):
 # ADMIN DASHBOARD
 # ============================================================
 @app.route("/admin/dashboard")
-@app.route("/admin/dashboard")
 def admin_dashboard():
 
     if "user_id" not in session:
@@ -2379,10 +2480,106 @@ def admin_dashboard():
         flash("Access denied.", "danger")
         return redirect(url_for("home"))
 
-    return render_template(
-        "admin_dashboard.html",
-        name=session.get("full_name")
-    )
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("home"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        # Total Patients
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_patients
+            FROM users
+            WHERE role = 'patient'
+            """
+        )
+        total_patients = cursor.fetchone()["total_patients"]
+
+        # Total Doctors
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_doctors
+            FROM users
+            WHERE role = 'doctor'
+            """
+        )
+        total_doctors = cursor.fetchone()["total_doctors"]
+
+        # Verified Doctors
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS verified_doctors
+            FROM doctors
+            WHERE verification_status = 'VERIFIED'
+            """
+        )
+        verified_doctors = cursor.fetchone()["verified_doctors"]
+
+        # Total Predictions
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_predictions
+            FROM predictions
+            """
+        )
+        total_predictions = cursor.fetchone()["total_predictions"]
+
+        # Total Medical Reports
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_reports
+            FROM medical_reports
+            """
+        )
+        total_reports = cursor.fetchone()["total_reports"]
+
+        # Pending Doctor Reviews
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS pending_reviews
+            FROM predictions p
+            WHERE p.prediction_status = 'COMPLETED'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM doctor_reviews dr
+                WHERE dr.prediction_id = p.prediction_id
+                AND dr.review_status = 'REVIEWED'
+            )
+            """
+        )
+        pending_reviews = cursor.fetchone()["pending_reviews"]
+
+        return render_template(
+            "admin_dashboard.html",
+            name=session.get("full_name"),
+            total_patients=total_patients,
+            total_doctors=total_doctors,
+            verified_doctors=verified_doctors,
+            total_predictions=total_predictions,
+            total_reports=total_reports,
+            pending_reviews=pending_reviews
+        )
+
+    except Exception as e:
+
+        print("Admin dashboard error:", e)
+
+        flash(
+            "Unable to load admin dashboard.",
+            "danger"
+        )
+
+        return redirect(url_for("home"))
+
+    finally:
+
+        cursor.close()
+        connection.close()
 
 # ============================================================
 # UPLOAD MEDICAL REPORT
@@ -3007,42 +3204,364 @@ def prediction_result(extraction_id):
 # Existing ML pipeline preserved
 # ============================================================
 
-@app.route("/predict", methods=["POST"])
-def predict():
 
-    patient = [
+@app.route("/admin/patients")
+def admin_patients():
 
-        int(request.form["age"]),
-        int(request.form["sex"]),
-        int(request.form["cp"]),
-        int(request.form["trestbps"]),
-        int(request.form["chol"]),
-        int(request.form["fbs"]),
-        int(request.form["restecg"]),
-        int(request.form["thalach"]),
-        int(request.form["exang"]),
-        float(request.form["oldpeak"]),
-        int(request.form["slope"])
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
 
-    ]
+    if session.get("role") != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
 
-    prediction, probability = predict_heart_disease(patient)
+    connection = get_db_connection()
 
-    if prediction == 1:
-        result = "Heart Disease Detected"
-    else:
-        result = "No Heart Disease"
+    if connection is None:
+        flash("Database connection failed.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT
+                user_id,
+                full_name,
+                email,
+                phone,
+                is_active,
+                created_at
+            FROM users
+            WHERE role = 'patient'
+            ORDER BY created_at DESC
+        """)
+
+        patients = cursor.fetchall()
+
+    except Exception as e:
+        print("Admin patients error:", e)
+        flash("Unable to load patients.", "danger")
+        patients = []
+
+    finally:
+        cursor.close()
+        connection.close()
 
     return render_template(
-        "result.html",
-        prediction=result,
-        probability=round(probability * 100, 2)
+        "admin_patients.html",
+        patients=patients,
+        name=session.get("full_name")
     )
 
+@app.route("/admin/doctors")
+def admin_doctors():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Database connection failed.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT
+                u.user_id,
+                u.full_name,
+                u.email,
+                u.phone,
+                u.is_active,
+                u.created_at,
+                d.doctor_id,
+                d.specialization,
+                d.medical_license_number,
+                d.qualification,
+                d.hospital_name,
+                d.experience_years,
+                d.verification_status
+            FROM users u
+            LEFT JOIN doctors d
+                ON u.user_id = d.user_id
+            WHERE u.role = 'doctor'
+            ORDER BY u.created_at DESC
+        """)
+
+        doctors = cursor.fetchall()
+
+    except Exception as e:
+        print("Admin doctors error:", e)
+        flash("Unable to load doctors.", "danger")
+        doctors = []
+
+    finally:
+        cursor.close()
+        connection.close()
+
+    return render_template(
+        "admin_doctors.html",
+        doctors=doctors,
+        name=session.get("full_name")
+    )
+
+@app.route("/admin/verify-doctors")
+def verify_doctors():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Database connection failed.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT
+                d.doctor_id,
+                u.user_id,
+                u.full_name,
+                u.email,
+                u.phone,
+                d.specialization,
+                d.medical_license_number,
+                d.qualification,
+                d.hospital_name,
+                d.experience_years,
+                d.verification_status,
+                d.created_at
+            FROM doctors d
+            INNER JOIN users u
+                ON d.user_id = u.user_id
+            WHERE u.role = 'doctor'
+            ORDER BY
+                CASE
+                    WHEN d.verification_status = 'PENDING' THEN 1
+                    WHEN d.verification_status = 'VERIFIED' THEN 2
+                    WHEN d.verification_status = 'REJECTED' THEN 3
+                    ELSE 4
+                END,
+                d.created_at DESC
+        """)
+
+        doctors = cursor.fetchall()
+
+    except Exception as e:
+        print("Verify doctors error:", e)
+        flash("Unable to load doctor verification records.", "danger")
+        doctors = []
+
+    finally:
+        cursor.close()
+        connection.close()
+
+    return render_template(
+        "admin_verify_doctors.html",
+        doctors=doctors,
+        name=session.get("full_name")
+    )
+
+@app.route("/admin/verify-doctor/<int:doctor_id>/<action>", methods=["POST"])
+def admin_verify_doctor(doctor_id, action):
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    if action not in ["verify", "reject"]:
+        flash("Invalid verification action.", "danger")
+        return redirect(url_for("verify_doctors"))
+
+    new_status = "VERIFIED" if action == "verify" else "REJECTED"
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Database connection failed.", "danger")
+        return redirect(url_for("verify_doctors"))
+
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("""
+            UPDATE doctors
+            SET verification_status = %s
+            WHERE doctor_id = %s
+        """, (new_status, doctor_id))
+
+        if cursor.rowcount == 0:
+            flash("Doctor profile not found.", "danger")
+        else:
+            connection.commit()
+
+            if action == "verify":
+                flash("Doctor verified successfully.", "success")
+            else:
+                flash("Doctor rejected successfully.", "warning")
+
+    except Exception as e:
+        connection.rollback()
+        print("Doctor verification error:", e)
+        flash("Unable to update doctor verification status.", "danger")
+
+    finally:
+        cursor.close()
+        connection.close()
+
+    return redirect(url_for("verify_doctors"))
+
+@app.route("/admin/predictions")
+def admin_predictions():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Database connection failed.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT
+                p.prediction_id,
+                p.patient_id,
+                u.full_name AS patient_name,
+                p.extraction_id,
+                p.model_name,
+                p.model_version,
+                p.prediction_result,
+                p.risk_probability,
+                p.risk_level,
+                p.prediction_status,
+                p.qaml_prediction,
+                p.qaml_quantum_score,
+                p.created_at
+            FROM predictions p
+            LEFT JOIN users u
+                ON p.patient_id = u.user_id
+            ORDER BY p.created_at DESC
+        """)
+
+        predictions = cursor.fetchall()
+
+    except Exception as e:
+        print("Admin predictions error:", e)
+        flash("Unable to load prediction records.", "danger")
+        predictions = []
+
+    finally:
+        cursor.close()
+        connection.close()
+
+    return render_template(
+        "admin_predictions.html",
+        predictions=predictions,
+        name=session.get("full_name")
+    )
+
+@app.route("/admin/model-info")
+def admin_model_info():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    return render_template(
+        "admin_model_info.html",
+        name=session.get("full_name")
+    )
+
+@app.route("/admin/logs")
+def admin_logs():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Database connection failed.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT
+                l.log_id,
+                l.user_id,
+                u.full_name,
+                u.role,
+                l.action,
+                l.description,
+                l.ip_address,
+                l.created_at
+            FROM system_logs l
+            LEFT JOIN users u
+                ON l.user_id = u.user_id
+            ORDER BY l.created_at DESC
+        """)
+
+        logs = cursor.fetchall()
+
+    except Exception as e:
+        print("Admin logs error:", e)
+        flash("Unable to load system logs.", "danger")
+        logs = []
+
+    finally:
+        cursor.close()
+        connection.close()
+
+    return render_template(
+        "admin_logs.html",
+        logs=logs,
+        name=session.get("full_name")
+    )
 
 # ============================================================
 # RUN APPLICATION
 # ============================================================
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)

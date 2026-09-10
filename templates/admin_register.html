@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Patient Registration | Heart CDSS</title>
+    <title>Admin Registration | HeartQAML</title>
 </head>
 
 <body>
 
-    <h1>Patient Registration</h1>
+    <h1>Admin Registration</h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
@@ -61,14 +61,14 @@
         <br><br>
 
         <button type="submit">
-            Create Patient Account
+            Create Admin Account
         </button>
 
     </form>
 
     <p>
         Already registered?
-        <a href="{{ url_for('login') }}">
+        <a href="{{ url_for('admin_login') }}">
             Login
         </a>
     </p>

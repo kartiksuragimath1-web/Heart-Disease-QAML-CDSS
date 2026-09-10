@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Information | HeartQAML</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f8f9;
+            color: #17233c;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5eeee;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #087f82;
+        }
+
+        .container {
+            width: 86%;
+            margin: 40px auto;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 25px;
+            padding: 11px 20px;
+            background: #087f82;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        h1 {
+            font-size: 34px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #667895;
+            margin-bottom: 30px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 28px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: #087f82;
+        }
+
+        .card h3 {
+            color: #17233c;
+            margin-bottom: 6px;
+        }
+
+        .card p {
+            color: #667895;
+            line-height: 1.6;
+        }
+
+        .metric {
+            margin: 15px 0;
+            padding: 14px;
+            background: #f2f8f9;
+            border-radius: 10px;
+        }
+
+        .metric strong {
+            display: block;
+            color: #17233c;
+            margin-bottom: 5px;
+        }
+
+        .qaml {
+            border-left: 5px solid #6b3fa0;
+        }
+
+        .classical {
+            border-left: 5px solid #087f82;
+        }
+
+        .note {
+            margin-top: 25px;
+            background: #fff8e8;
+            border-radius: 12px;
+            padding: 18px;
+            color: #735500;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 800px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+
+    <div class="logo">♥ HeartQAML</div>
+
+    <a href="{{ url_for('logout') }}"
+       style="background:#087f82;color:white;padding:12px 22px;
+              border-radius:8px;text-decoration:none;font-weight:bold;">
+        Logout
+    </a>
+
+</div>
+
+<div class="container">
+
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">
+        ← Back to Dashboard
+    </a>
+
+    <h1>Model Information</h1>
+
+    <div class="subtitle">
+        Overview of the AI and quantum-assisted components used by HeartQAML.
+    </div>
+
+    <div class="grid">
+
+        <div class="card classical">
+
+            <h2>Hybrid ML Model</h2>
+
+            <h3>Hybrid KNN + Random Forest</h3>
+
+            <p>
+                The primary prediction model combines K-Nearest Neighbors
+                and Random Forest to support heart disease risk prediction.
+            </p>
+
+            <div class="metric">
+                <strong>Model Version</strong>
+                1.0
+            </div>
+
+            <div class="metric">
+                <strong>Role</strong>
+                Primary AI prediction model
+            </div>
+
+            <div class="metric">
+                <strong>Prediction Output</strong>
+                Heart disease prediction and risk probability
+            </div>
+
+        </div>
+
+
+        <div class="card qaml">
+
+            <h2>QAML Component</h2>
+
+            <h3>Quantum-Assisted Machine Learning</h3>
+
+            <p>
+                The QAML component uses a quantum circuit-based model to
+                provide an experimental quantum-assisted prediction signal.
+            </p>
+
+            <div class="metric">
+                <strong>Quantum Circuit</strong>
+                4-qubit circuit
+            </div>
+
+            <div class="metric">
+                <strong>Feature Encoding</strong>
+                Quantum feature encoding
+            </div>
+
+            <div class="metric">
+                <strong>Output</strong>
+                QAML prediction and quantum score
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>Classical Model Performance</h2>
+
+            <div class="metric">
+                <strong>Accuracy</strong>
+                91.30%
+            </div>
+
+            <div class="metric">
+                <strong>Precision</strong>
+                91.35%
+            </div>
+
+            <div class="metric">
+                <strong>Recall</strong>
+                93.14%
+            </div>
+
+            <div class="metric">
+                <strong>F1 Score</strong>
+                92.23%
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>QAML Evaluation</h2>
+
+            <p>
+                QAML is currently treated as an experimental research
+                component rather than the primary clinical prediction model.
+            </p>
+
+            <div class="metric">
+                <strong>Training Optimizer</strong>
+                COBYLA
+            </div>
+
+            <div class="metric">
+                <strong>Variational Ansatz</strong>
+                RealAmplitudes
+            </div>
+
+            <div class="metric">
+                <strong>Feature Map</strong>
+                ZZFeatureMap
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="note">
+
+        <strong>Important:</strong>
+        The QAML quantum score is a quantum model feature/signal and should
+        not be interpreted as a clinical disease probability. The system's
+        primary risk probability is generated by the Hybrid KNN + Random
+        Forest model.
+
+    </div>
+
+</div>
+
+</body>
+</html>
