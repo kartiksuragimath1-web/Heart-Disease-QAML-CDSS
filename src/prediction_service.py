@@ -1,5 +1,6 @@
 from database import get_db_connection
 from src.prediction import predict_heart_disease
+from src.quantum_model import qaml_predict
 
 
 FEATURE_COLUMNS = [
@@ -63,7 +64,9 @@ def save_prediction(
     patient_id,
     extraction_id,
     prediction,
-    probability
+    probability,
+    qaml_prediction,
+    quantum_score
 ):
     """
     Save ML prediction into predictions table.
@@ -95,12 +98,15 @@ def save_prediction(
             prediction_result,
             risk_probability,
             risk_level,
-            prediction_status
+            prediction_status,
+            qaml_prediction,
+            qaml_quantum_score
         )
-        VALUES
+       VALUES
         (
             %s, %s, %s, %s,
-            %s, %s, %s, %s
+            %s, %s, %s, %s,
+            %s, %s
         )
         """
 
@@ -112,7 +118,9 @@ def save_prediction(
             int(prediction),
             round(float(probability), 5),
             risk_level,
-            "COMPLETED"
+            "COMPLETED",
+            int(qaml_prediction),
+            round(float(quantum_score), 8)
         )
 
         cursor.execute(query, values)
@@ -194,6 +202,21 @@ def predict_from_extraction(
     prediction, probability = predict_heart_disease(
         patient_data
     )
+    qaml_prediction, quantum_score = qaml_predict(
+        [
+            extraction["age"],
+            extraction["sex"],
+            extraction["chest_pain_type"],
+            extraction["resting_bp"],
+            extraction["cholesterol"],
+            extraction["fasting_blood_sugar"],
+            extraction["resting_ecg"],
+            extraction["max_heart_rate"],
+            extraction["exercise_angina"],
+            extraction["oldpeak"],
+            extraction["st_slope"]
+        ]
+    )
 
     print("\n===== AI PREDICTION =====")
 
@@ -212,7 +235,9 @@ def predict_from_extraction(
         patient_id,
         extraction_id,
         prediction,
-        probability
+        probability,
+        qaml_prediction,
+        quantum_score
     )
 
     return success

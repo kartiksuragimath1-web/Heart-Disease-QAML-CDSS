@@ -112,3 +112,64 @@ def qaml_score(features, classical_probability):
     )
 
     return float(qaml_score)
+def qaml_predict(features):
+    """
+    Run inference using the trained QAML model.
+
+    Returns:
+        prediction: 0 or 1
+        quantum_score: probability of the |0000> state
+
+    Note:
+        quantum_score is a quantum model output and must not
+        be presented as a clinical disease probability.
+    """
+
+    import joblib
+    from config import MODEL_DIR
+
+    model_path = f"{MODEL_DIR}/qaml_vqc.pkl"
+
+    config = joblib.load(model_path)
+
+    features = np.asarray(features, dtype=float)
+
+    if len(features) != 11:
+        raise ValueError("Exactly 11 clinical features are required.")
+
+    # The QAML model was trained using the first 4 scaled features.
+    qaml_features = features[:4]
+
+    feature_map = config["feature_map"]
+    ansatz = config["ansatz"]
+    weights = np.asarray(config["weights"])
+
+    # Encode the four features.
+    feature_circuit = feature_map.assign_parameters(qaml_features)
+
+    # Insert the trained parameters.
+    ansatz_circuit = ansatz.assign_parameters(weights)
+
+    # Combine feature map and trained ansatz.
+    circuit = feature_circuit.compose(ansatz_circuit)
+
+    # Simulate the trained quantum circuit.
+    state = Statevector.from_instruction(circuit)
+
+    probabilities = state.probabilities()
+
+    quantum_score = float(probabilities[0])
+
+    # VQC binary interpretation:
+    # compare the probability mass of the two classes.
+    class_0_probability = float(
+        np.sum(probabilities[0::2])
+    )
+
+    class_1_probability = float(
+        np.sum(probabilities[1::2])
+    )
+
+    prediction = 1 if class_1_probability > class_0_probability else 0
+
+    return prediction, quantum_score

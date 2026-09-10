@@ -109,6 +109,33 @@ def train_qaml_model():
 
     print("\nQAML training completed.")
 
+    print("\n===== QAML EVALUATION =====")
+
+    qaml_predictions = vqc.predict(X_test[:, :4]).ravel()
+
+    from sklearn.metrics import (
+        accuracy_score,
+        precision_score,
+        recall_score,
+        f1_score,
+        confusion_matrix
+    )
+
+    accuracy = accuracy_score(y_test, qaml_predictions)
+    precision = precision_score(y_test, qaml_predictions, zero_division=0)
+    recall = recall_score(y_test, qaml_predictions, zero_division=0)
+    f1 = f1_score(y_test, qaml_predictions, zero_division=0)
+    cm = confusion_matrix(y_test, qaml_predictions)
+
+    print("Accuracy :", round(accuracy * 100, 2), "%")
+    print("Precision:", round(precision * 100, 2), "%")
+    print("Recall   :", round(recall * 100, 2), "%")
+    print("F1 Score :", round(f1 * 100, 2), "%")
+    print("Confusion Matrix:")
+    print(cm)
+    print("\n===== MODEL COMPARISON =====")
+    print("Hybrid KNN + Random Forest Accuracy: calculated separately")
+    print("QAML Accuracy:", round(accuracy * 100, 2), "%")
     print("Saving QAML model configuration...")
 
     qaml_config = {
