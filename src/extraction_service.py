@@ -166,12 +166,21 @@ def save_extracted_features(report_id, pdf_path):
             extraction_method,
             validation_status,
             extraction_confidence,
-            doctor_verified
+            doctor_verified,
+            ecg_quality,
+            ventricular_rate,
+            pr_interval,
+            qrs_duration,
+            qtc_interval,
+            cardiac_axis,
+            sinus_rhythm,
+            av_conduction
         )
         VALUES
         (
-            %s, %s, %s, %s, %s, %s, %s,
-            %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s, %s, %s, %s
         )
         """
 
@@ -193,7 +202,16 @@ def save_extracted_features(report_id, pdf_path):
             "PDF_TEXT",
             validation_status,
             round(confidence, 4),
-            0
+            0,
+
+            features.get("ecg_quality"),
+            features.get("ventricular_rate"),
+            features.get("pr_interval"),
+            features.get("qrs_duration"),
+            features.get("qtc_interval"),
+            features.get("cardiac_axis"),
+            features.get("sinus_rhythm"),
+            features.get("av_conduction")
         )
 
         cursor.execute(query, values)

@@ -333,6 +333,97 @@
 
                     </div>
 
+                    <div class="section-title">
+                        ECG-Specific Measurements
+                    </div>
+
+                    <div class="features">
+
+                        <div class="feature">
+                            <div class="label">ECG Quality</div>
+                            <div class="value">
+                                {{ feature.ecg_quality or 'Not available' }}
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <div class="label">Ventricular Rate</div>
+                            <div class="value">
+                                {% if feature.ventricular_rate is not none %}
+                                    {{ feature.ventricular_rate }} bpm
+                                {% else %}
+                                    Not available
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <div class="label">PR Interval</div>
+                            <div class="value">
+                                {% if feature.pr_interval is not none %}
+                                    {{ feature.pr_interval }} ms
+                                {% else %}
+                                    Not available
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <div class="label">QRS Duration</div>
+                            <div class="value">
+                                {% if feature.qrs_duration is not none %}
+                                    {{ feature.qrs_duration }} ms
+                                {% else %}
+                                    Not available
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <div class="label">QTc Interval</div>
+                            <div class="value">
+                                {% if feature.qtc_interval is not none %}
+                                    {{ feature.qtc_interval }} ms
+                                {% else %}
+                                    Not available
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <div class="label">Cardiac Axis</div>
+                            <div class="value">
+                                {% if feature.cardiac_axis is not none %}
+                                    {{ feature.cardiac_axis }}°
+                                {% else %}
+                                    Not available
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <div class="label">Sinus Rhythm</div>
+                            <div class="value">
+                                {% if feature.sinus_rhythm is not none %}
+                                    {% if feature.sinus_rhythm %}
+                                        Yes
+                                    {% else %}
+                                        No
+                                    {% endif %}
+                                {% else %}
+                                    Not available
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <div class="label">AV Conduction</div>
+                            <div class="value">
+                                {{ feature.av_conduction or 'Not available' }}
+                            </div>
+                        </div>
+
+                    </div>
 
                     <div class="section-title">
                         Extraction Information

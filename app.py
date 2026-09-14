@@ -392,17 +392,28 @@ def doctor_login():
 
             cursor.execute(
                 """
-                SELECT *
-                FROM users
-                WHERE email = %s
-                AND role = 'doctor'
-                AND is_active = 1
+                SELECT
+                    u.*,
+                    d.verification_status
+                FROM users u
+                LEFT JOIN doctors d
+                    ON u.user_id = d.user_id
+                WHERE u.email = %s
+                AND u.role = 'doctor'
+                AND u.is_active = 1
                 LIMIT 1
                 """,
                 (email,)
             )
 
             user = cursor.fetchone()
+
+            if user and user["verification_status"] != "VERIFIED":
+                flash(
+                    "Your doctor account is not verified by the administrator.",
+                    "warning"
+                )
+                return redirect(url_for("doctor_login"))          
 
             if user and check_password_hash(
                 user["password_hash"],
@@ -1340,8 +1351,71 @@ def patient_reports():
 
         cursor.close()
         connection.close()
+# ============================================================
+# PATIENT VIEW MEDICAL REPORT
+# ============================================================
 
+@app.route("/patient/report/<int:report_id>")
+def patient_view_report(report_id):
 
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "patient":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("patient_reports"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT
+                report_id,
+                stored_file_name,
+                original_file_name
+            FROM medical_reports
+            WHERE report_id = %s
+              AND patient_id = %s
+            """,
+            (report_id, session["user_id"])
+        )
+
+        report = cursor.fetchone()
+
+        if not report:
+            flash("Medical report not found.", "danger")
+            return redirect(url_for("patient_reports"))
+
+        return send_from_directory(
+            "uploads/ecg",
+            report["stored_file_name"],
+            as_attachment=False
+        )
+
+    except Exception as e:
+
+        print("Patient report view error:", e)
+
+        flash(
+            "Unable to open medical report.",
+            "danger"
+        )
+
+        return redirect(url_for("patient_reports"))
+
+    finally:
+
+        cursor.close()
+        connection.close()
 # ============================================================
 # PATIENT DOCTOR REVIEWS
 # ============================================================
@@ -1437,6 +1511,10 @@ def patient_doctor_reviews():
 
     try:
 
+        # ========================================================
+        # AI PREDICTION BASED DOCTOR REVIEWS
+        # ========================================================
+
         cursor.execute(
             """
             SELECT
@@ -1455,8 +1533,11 @@ def patient_doctor_reviews():
                 p.model_version,
                 p.created_at,
 
+                m.report_id,
                 m.report_type,
-                m.original_file_name
+                m.original_file_name,
+
+                'AI_PREDICTION' AS review_source
 
             FROM doctor_reviews dr
 
@@ -1470,15 +1551,69 @@ def patient_doctor_reviews():
                 ON e.report_id = m.report_id
 
             WHERE m.patient_id = %s
-            AND dr.review_status = 'REVIEWED'
-
-            ORDER BY dr.reviewed_at DESC
+              AND dr.review_status = 'REVIEWED'
             """,
             (session["user_id"],)
         )
 
-        reviews = cursor.fetchall()
-   
+        prediction_reviews = cursor.fetchall()
+
+
+        # ========================================================
+        # REPORT-ONLY DOCTOR REVIEWS
+        # ========================================================
+
+        cursor.execute(
+            """
+            SELECT
+                rdr.review_id,
+                rdr.review_status,
+                rdr.doctor_decision,
+                rdr.diagnosis_notes,
+                rdr.recommendations,
+
+                NULL AS prediction_agreement,
+                rdr.reviewed_at,
+
+                NULL AS prediction_id,
+                NULL AS risk_probability,
+                NULL AS risk_level,
+                NULL AS model_name,
+                NULL AS model_version,
+                NULL AS created_at,
+
+                m.report_id,
+                m.report_type,
+                m.original_file_name,
+
+                'REPORT_REVIEW' AS review_source
+
+            FROM report_doctor_reviews rdr
+
+            JOIN medical_reports m
+                ON rdr.report_id = m.report_id
+
+            WHERE m.patient_id = %s
+              AND rdr.review_status = 'REVIEWED'
+            """,
+            (session["user_id"],)
+        )
+
+        report_reviews = cursor.fetchall()
+
+
+        # ========================================================
+        # COMBINE BOTH REVIEW TYPES
+        # ========================================================
+
+        reviews = prediction_reviews + report_reviews
+
+        # Latest reviews first
+        reviews.sort(
+            key=lambda review: review["reviewed_at"] or "",
+            reverse=True
+        )
+
 
         return render_template(
             "doctor_reviews.html",
@@ -1506,7 +1641,6 @@ def patient_doctor_reviews():
 
         cursor.close()
         connection.close()
-
 # ============================================================
 # DOCTOR DASHBOARD
 # ============================================================
@@ -1530,6 +1664,41 @@ def doctor_predictions():
     cursor = connection.cursor(dictionary=True)
 
     try:
+                # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash(
+                "Doctor profile not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
 
         cursor.execute(
             """
@@ -1606,6 +1775,41 @@ def doctor_reports():
     cursor = connection.cursor(dictionary=True)
 
     try:
+                # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash(
+                "Doctor profile not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("home")
+            )
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(
+                url_for("home")
+            )
 
         cursor.execute(
             """
@@ -1674,14 +1878,43 @@ def doctor_view_report(report_id):
 
     try:
 
+        # Verify that the logged-in user has a verified doctor profile
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            flash("Doctor profile not found.", "danger")
+            return redirect(url_for("doctor_dashboard"))
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(url_for("doctor_dashboard"))
+
+        # Get the requested medical report
         cursor.execute(
             """
             SELECT
                 report_id,
                 stored_file_name,
-                original_file_name
+                original_file_name,
+                report_type
             FROM medical_reports
             WHERE report_id = %s
+            LIMIT 1
             """,
             (report_id,)
         )
@@ -1692,18 +1925,422 @@ def doctor_view_report(report_id):
             flash("Medical report not found.", "danger")
             return redirect(url_for("doctor_reports"))
 
+        # Determine the upload folder from the report type
+        report_type = (report["report_type"] or "ECG").upper()
+
+        upload_folders = {
+            "ECG": "uploads/ecg",
+            "LAB": "uploads/lab",
+            "LAB_REPORT": "uploads/lab",
+            "MEDICAL_REPORT": "uploads/medical"
+        }
+
+        upload_folder = upload_folders.get(
+            report_type,
+            "uploads/ecg"
+        )
+
         return send_from_directory(
-             "uploads/ecg",
+            upload_folder,
             report["stored_file_name"],
             as_attachment=False
         )
 
     except Exception as e:
+
         print("Doctor report view error:", e)
-        flash("Unable to open medical report.", "danger")
+
+        flash(
+            "Unable to open medical report.",
+            "danger"
+        )
+
         return redirect(url_for("doctor_reports"))
 
     finally:
+
+        cursor.close()
+        connection.close()
+@app.route("/doctor/report/<int:report_id>/review")
+def doctor_report_review(report_id):
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_reports"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # Get logged-in doctor's doctor_id
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if not doctor:
+            flash("Doctor profile not found.", "danger")
+            return redirect(url_for("doctor_dashboard"))
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(url_for("doctor_dashboard"))
+
+        doctor_id = doctor["doctor_id"]
+        # Get report and extracted clinical information
+        cursor.execute(
+            """
+            SELECT
+                m.report_id,
+                m.patient_id,
+                m.original_file_name,
+                m.report_type,
+                m.processing_status,
+                m.uploaded_at,
+
+                u.full_name AS patient_name,
+                u.email AS patient_email,
+                u.phone AS patient_phone,
+
+                e.extraction_id,
+                e.age,
+                e.sex,
+                e.chest_pain_type,
+                e.resting_bp,
+                e.cholesterol,
+                e.fasting_blood_sugar,
+                e.resting_ecg,
+                e.max_heart_rate,
+                e.exercise_angina,
+                e.oldpeak,
+                e.st_slope,
+
+                e.ecg_quality,
+                e.ventricular_rate,
+                e.pr_interval,
+                e.qrs_duration,
+                e.qtc_interval,
+                e.cardiac_axis,
+                e.sinus_rhythm,
+                e.av_conduction,
+
+                e.extraction_method,
+                e.validation_status,
+                e.extraction_confidence,
+                e.doctor_verified,
+                e.extracted_at
+
+            FROM medical_reports m
+
+            JOIN users u
+                ON m.patient_id = u.user_id
+
+            LEFT JOIN extracted_features e
+                ON m.report_id = e.report_id
+
+            WHERE m.report_id = %s
+            AND (
+                e.validation_status = 'NEEDS_REVIEW'
+                OR m.processing_status = 'NEEDS_REVIEW'
+            )
+
+            LIMIT 1
+            """,
+            (report_id,)
+        )
+
+        report = cursor.fetchone()
+
+        if not report:
+            flash("Medical report not found.", "danger")
+            return redirect(url_for("doctor_reports"))
+
+        # Get existing report-based doctor review
+        cursor.execute(
+            """
+            SELECT
+                review_id,
+                review_status,
+                doctor_decision,
+                diagnosis_notes,
+                recommendations,
+                reviewed_at
+            FROM report_doctor_reviews
+            WHERE report_id = %s
+              AND doctor_id = %s
+            ORDER BY review_id DESC
+            LIMIT 1
+            """,
+            (report_id, doctor_id)
+        )
+
+        doctor_review = cursor.fetchone()
+
+        return render_template(
+            "doctor_report_review.html",
+            name=session.get("full_name"),
+            report=report,
+            doctor_review=doctor_review
+        )
+
+    except Exception as e:
+
+        print("Doctor report review error:", e)
+
+        flash("Unable to load report review.", "danger")
+
+        return redirect(url_for("doctor_reports"))
+
+    finally:
+
+        cursor.close()
+        connection.close()
+
+@app.route("/doctor/report/<int:report_id>/review/submit", methods=["POST"])
+def submit_report_doctor_review(report_id):
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    doctor_decision = request.form.get("doctor_decision", "").strip()
+    diagnosis_notes = request.form.get("diagnosis_notes", "").strip()
+    recommendations = request.form.get("recommendations", "").strip()
+
+    allowed_decisions = [
+        "LOW_RISK",
+        "MODERATE_RISK",
+        "HIGH_RISK",
+        "INCONCLUSIVE"
+    ]
+
+    if doctor_decision not in allowed_decisions:
+        flash("Please select a valid clinical decision.", "warning")
+        return redirect(
+            url_for(
+                "doctor_report_review",
+                report_id=report_id
+            )
+        )
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_reports"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+                # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash(
+                "Doctor profile not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        doctor_id = doctor["doctor_id"]
+
+ 
+        # Verify that the medical report exists and requires review
+        cursor.execute(
+            """
+            SELECT
+                m.report_id
+            FROM medical_reports m
+            LEFT JOIN extracted_features e
+                ON m.report_id = e.report_id
+            WHERE m.report_id = %s
+            AND (
+                e.validation_status = 'NEEDS_REVIEW'
+                OR m.processing_status = 'NEEDS_REVIEW'
+            )
+            LIMIT 1
+            """,
+            (report_id,)
+        )
+
+        report = cursor.fetchone()
+
+        if not report:
+            flash("Medical report not found.", "danger")
+            return redirect(url_for("doctor_reports"))
+
+        # Check whether this doctor already reviewed this report
+        cursor.execute(
+            """
+            SELECT review_id
+            FROM report_doctor_reviews
+            WHERE report_id = %s
+              AND doctor_id = %s
+            ORDER BY review_id DESC
+            LIMIT 1
+            """,
+            (report_id, doctor_id)
+        )
+
+        existing_review = cursor.fetchone()
+
+        if existing_review:
+
+            cursor.execute(
+                """
+                UPDATE report_doctor_reviews
+                SET
+                    review_status = 'REVIEWED',
+                    doctor_decision = %s,
+                    diagnosis_notes = %s,
+                    recommendations = %s,
+                    reviewed_at = CURRENT_TIMESTAMP
+                WHERE review_id = %s
+                """,
+                (
+                    doctor_decision,
+                    diagnosis_notes,
+                    recommendations,
+                    existing_review["review_id"]
+                )
+            )
+
+        else:
+
+            cursor.execute(
+                """
+                INSERT INTO report_doctor_reviews
+                (
+                    report_id,
+                    doctor_id,
+                    review_status,
+                    doctor_decision,
+                    diagnosis_notes,
+                    recommendations,
+                    reviewed_at
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    'REVIEWED',
+                    %s,
+                    %s,
+                    %s,
+                    CURRENT_TIMESTAMP
+                )
+                """,
+                (
+                    report_id,
+                    doctor_id,
+                    doctor_decision,
+                    diagnosis_notes,
+                    recommendations
+                )
+            )
+        # Mark the medical report as reviewed
+        cursor.execute(
+            """
+            UPDATE medical_reports
+            SET processing_status = 'PROCESSED'
+            WHERE report_id = %s
+            """,
+            (report_id,)
+        )
+        # Mark the extraction as reviewed
+        cursor.execute(
+            """
+            UPDATE extracted_features
+            SET validation_status = 'VALID'
+            WHERE report_id = %s
+            """,
+            (report_id,)
+        )
+        connection.commit()
+
+        flash(
+            "Doctor review submitted successfully.",
+            "success"
+        )
+
+        return redirect(
+            url_for(
+                "doctor_report_review",
+                report_id=report_id
+            )
+        )
+
+    except Exception as e:
+
+        connection.rollback()
+
+        print("Report doctor review error:", e)
+
+        flash(
+            "Unable to save doctor review.",
+            "danger"
+        )
+
+        return redirect(
+            url_for(
+                "doctor_report_review",
+                report_id=report_id
+            )
+        )
+
+    finally:
+
         cursor.close()
         connection.close()
 
@@ -1727,6 +2364,41 @@ def doctor_features():
     cursor = connection.cursor(dictionary=True)
 
     try:
+                # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash(
+                "Doctor profile not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
 
         cursor.execute(
             """
@@ -1745,6 +2417,15 @@ def doctor_features():
                 e.exercise_angina,
                 e.oldpeak,
                 e.st_slope,
+
+                e.ecg_quality,
+                e.ventricular_rate,
+                e.pr_interval,
+                e.qrs_duration,
+                e.qtc_interval,
+                e.cardiac_axis,
+                e.sinus_rhythm,
+                e.av_conduction,
 
                 e.extraction_method,
                 e.validation_status,
@@ -1786,6 +2467,8 @@ def doctor_features():
     finally:
         cursor.close()
         connection.close()
+
+
 @app.route("/doctor/features/<int:extraction_id>/verify", methods=["POST"])
 def verify_clinical_features(extraction_id):
 
@@ -1803,9 +2486,97 @@ def verify_clinical_features(extraction_id):
         flash("Unable to connect to database.", "danger")
         return redirect(url_for("doctor_features"))
 
-    cursor = connection.cursor()
+    cursor = connection.cursor(dictionary=True)
 
     try:
+                # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash(
+                "Doctor profile not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        cursor.execute(
+            """
+            SELECT
+                age,
+                sex,
+                chest_pain_type,
+                resting_bp,
+                cholesterol,
+                fasting_blood_sugar,
+                resting_ecg,
+                max_heart_rate,
+                exercise_angina,
+                oldpeak,
+                st_slope
+            FROM extracted_features
+            WHERE extraction_id = %s
+            """,
+            (extraction_id,)
+        )
+
+        extraction = cursor.fetchone()
+
+        if not extraction:
+            flash("Clinical feature record not found.", "danger")
+            return redirect(url_for("doctor_features"))
+
+        required_fields = [
+            "age",
+            "sex",
+            "chest_pain_type",
+            "resting_bp",
+            "cholesterol",
+            "fasting_blood_sugar",
+            "resting_ecg",
+            "max_heart_rate",
+            "exercise_angina",
+            "oldpeak",
+            "st_slope"
+        ]
+
+        missing_fields = [
+            field
+            for field in required_fields
+            if extraction[field] is None
+        ]
+
+        if missing_fields:
+            flash(
+                "Verification blocked. Required clinical features are missing.",
+                "warning"
+            )
+            return redirect(url_for("doctor_features"))
 
         cursor.execute(
             """
@@ -1871,6 +2642,41 @@ def doctor_dashboard():
     cursor = connection.cursor(dictionary=True)
 
     try:
+                # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash(
+                "Doctor profile not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("home")
+            )
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(
+                url_for("home")
+            )
 
         # ====================================================
         # 1. TOTAL PATIENTS
@@ -2105,6 +2911,48 @@ def doctor_case_details(prediction_id):
 
     try:
 
+        # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash(
+                "Doctor profile not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        doctor_id = doctor["doctor_id"]
+
+        # ====================================================
+        # GET PATIENT CASE
+        # ====================================================
+
         cursor.execute(
             """
             SELECT
@@ -2166,35 +3014,13 @@ def doctor_case_details(prediction_id):
         case = cursor.fetchone()
 
         if case is None:
-            flash("Patient case not found.", "danger")
-            return redirect(url_for("doctor_dashboard"))
-
-        # ====================================================
-        # GET LOGGED-IN DOCTOR ID
-        # ====================================================
-
-        cursor.execute(
-            """
-            SELECT doctor_id
-            FROM doctors
-            WHERE user_id = %s
-            LIMIT 1
-            """,
-            (session["user_id"],)
-        )
-
-        doctor = cursor.fetchone()
-
-        if doctor is None:
             flash(
-                "Doctor profile not found.",
+                "Patient case not found.",
                 "danger"
             )
             return redirect(
                 url_for("doctor_dashboard")
             )
-
-        doctor_id = doctor["doctor_id"]
 
         # ====================================================
         # GET EXISTING DOCTOR REVIEW
@@ -2214,7 +3040,7 @@ def doctor_case_details(prediction_id):
             FROM doctor_reviews
 
             WHERE prediction_id = %s
-            AND doctor_id = %s
+              AND doctor_id = %s
 
             ORDER BY review_id DESC
 
@@ -2228,19 +3054,30 @@ def doctor_case_details(prediction_id):
 
         doctor_review = cursor.fetchone()
 
+        # ====================================================
+        # CALCULATE DISPLAY VALUES
+        # ====================================================
+
         case["risk_probability_percent"] = round(
-                    float(case["risk_probability"]) * 100,
-                    2
-                )
+            float(case["risk_probability"]) * 100,
+            2
+        )
 
         if case["prediction_result"] == 1:
-                    case["prediction_label"] = (
-                        "Heart Disease Risk Detected"
-                    )
+
+            case["prediction_label"] = (
+                "Heart Disease Risk Detected"
+            )
+
         else:
-                    case["prediction_label"] = (
-                        "No Heart Disease Risk Detected"
-                    )
+
+            case["prediction_label"] = (
+                "No Heart Disease Risk Detected"
+            )
+
+        # ====================================================
+        # RENDER CASE
+        # ====================================================
 
         return render_template(
             "doctor_case_details.html",
@@ -2251,25 +3088,24 @@ def doctor_case_details(prediction_id):
 
     except Exception as e:
 
-                print(
-                    "Doctor case details error:",
-                    e
-                )
+        print(
+            "Doctor case details error:",
+            e
+        )
 
-                flash(
-                    "Unable to load patient case.",
-                    "danger"
-                )
+        flash(
+            "Unable to load patient case.",
+            "danger"
+        )
 
-                return redirect(
-                    url_for("doctor_dashboard")
-                )
+        return redirect(
+            url_for("doctor_dashboard")
+        )
 
     finally:
 
-                cursor.close()
-                connection.close()
-
+        cursor.close()
+        connection.close()
 # ============================================================
 # DOCTOR CLINICAL REVIEW
 # ============================================================
@@ -2300,10 +3136,15 @@ def submit_doctor_review(prediction_id):
 
     try:
 
-        # GET DOCTOR ID
+        # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
         cursor.execute(
             """
-            SELECT doctor_id
+            SELECT
+                doctor_id,
+                verification_status
             FROM doctors
             WHERE user_id = %s
             LIMIT 1
@@ -2314,18 +3155,77 @@ def submit_doctor_review(prediction_id):
         doctor = cursor.fetchone()
 
         if doctor is None:
-            flash("Doctor profile not found.", "danger")
-            return redirect(url_for("doctor_dashboard"))
+            flash(
+                "Doctor profile not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
 
         doctor_id = doctor["doctor_id"]
 
-        # GET FORM DATA
-        doctor_decision = request.form.get("doctor_decision")
-        diagnosis_notes = request.form.get("diagnosis_notes", "").strip()
-        recommendations = request.form.get("recommendations", "").strip()
-        prediction_agreement = request.form.get("prediction_agreement")
+        # ====================================================
+        # VERIFY PREDICTION EXISTS
+        # ====================================================
 
+        cursor.execute(
+            """
+            SELECT prediction_id
+            FROM predictions
+            WHERE prediction_id = %s
+            LIMIT 1
+            """,
+            (prediction_id,)
+        )
+
+        prediction = cursor.fetchone()
+
+        if prediction is None:
+            flash(
+                "Prediction record not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("doctor_dashboard")
+            )
+
+        # ====================================================
+        # GET FORM DATA
+        # ====================================================
+
+        doctor_decision = request.form.get(
+            "doctor_decision",
+            ""
+        ).strip()
+
+        diagnosis_notes = request.form.get(
+            "diagnosis_notes",
+            ""
+        ).strip()
+
+        recommendations = request.form.get(
+            "recommendations",
+            ""
+        ).strip()
+
+        prediction_agreement = request.form.get(
+            "prediction_agreement"
+        )
+
+        # ====================================================
         # VALIDATE DECISION
+        # ====================================================
+
         allowed_decisions = [
             "LOW_RISK",
             "MODERATE_RISK",
@@ -2334,7 +3234,12 @@ def submit_doctor_review(prediction_id):
         ]
 
         if doctor_decision not in allowed_decisions:
-            flash("Please select a valid clinical decision.", "danger")
+
+            flash(
+                "Please select a valid clinical decision.",
+                "danger"
+            )
+
             return redirect(
                 url_for(
                     "doctor_case_details",
@@ -2342,32 +3247,46 @@ def submit_doctor_review(prediction_id):
                 )
             )
 
+        # ====================================================
         # CONVERT AGREEMENT TO INTEGER
+        # ====================================================
+
         if prediction_agreement == "YES":
             agreement_value = 1
+
         elif prediction_agreement == "NO":
             agreement_value = 0
+
         else:
             agreement_value = None
 
+        # ====================================================
         # CHECK EXISTING REVIEW
+        # ====================================================
+
         cursor.execute(
             """
             SELECT review_id
             FROM doctor_reviews
             WHERE prediction_id = %s
-            AND doctor_id = %s
+              AND doctor_id = %s
             ORDER BY review_id DESC
             LIMIT 1
             """,
-            (prediction_id, doctor_id)
+            (
+                prediction_id,
+                doctor_id
+            )
         )
 
         existing_review = cursor.fetchone()
 
         if existing_review:
 
+            # =================================================
             # UPDATE EXISTING REVIEW
+            # =================================================
+
             cursor.execute(
                 """
                 UPDATE doctor_reviews
@@ -2391,7 +3310,10 @@ def submit_doctor_review(prediction_id):
 
         else:
 
+            # =================================================
             # CREATE NEW REVIEW
+            # =================================================
+
             cursor.execute(
                 """
                 INSERT INTO doctor_reviews

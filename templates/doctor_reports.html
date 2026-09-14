@@ -305,13 +305,23 @@
 
                       </div>
 
-                    <a
-                        href="{{ url_for('doctor_view_report', report_id=report.report_id) }}"
-                        target="_blank"
-                        class="view-btn"
-                    >
-                        View Report
-                    </a>
+                        <a
+                            href="{{ url_for('doctor_view_report', report_id=report.report_id) }}"
+                            target="_blank"
+                            class="view-btn"
+                        >
+                            View Report
+                        </a>
+
+                        {% if report.validation_status == 'NEEDS_REVIEW' %}
+                        <a
+                            href="{{ url_for('doctor_report_review', report_id=report.report_id) }}"
+                            class="view-btn"
+                            style="background:#16a34a; margin-left:8px;"
+                        >
+                            Review Report
+                        </a>
+                        {% endif %}
 
                 </div>
 

@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Doctor Report Review - HeartQAML</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        .header {
+            background: #0f172a;
+            color: white;
+            padding: 18px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .doctor-name {
+            font-size: 14px;
+            color: #cbd5e1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 16px;
+            background: #e2e8f0;
+            color: #1e293b;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .back-btn:hover {
+            background: #cbd5e1;
+        }
+
+        .page-title {
+            margin-bottom: 25px;
+        }
+
+        .page-title h2 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+        }
+
+        .page-title p {
+            margin: 0;
+            color: #64748b;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 12px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .info-item {
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 7px;
+        }
+
+        .label {
+            display: block;
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .value {
+            font-size: 15px;
+            font-weight: bold;
+            color: #1e293b;
+            word-break: break-word;
+        }
+
+        .status-warning {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .status-warning strong {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 17px;
+        }
+
+        .report-btn {
+            display: inline-block;
+            padding: 11px 18px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .report-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .section-heading {
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 17px;
+            color: #334155;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 15px;
+            font-family: Arial, sans-serif;
+        }
+
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 7px;
+            background: #16a34a;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: #15803d;
+        }
+
+        .review-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .review-status {
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .empty {
+            color: #64748b;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .container {
+                margin: 20px auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>HeartQAML - Doctor Portal</h1>
+
+        <div class="doctor-name">
+            Dr. {{ name }}
+        </div>
+    </div>
+
+
+    <div class="container">
+
+        <a href="{{ url_for('doctor_reports') }}" class="back-btn">
+            ← Back to Medical Reports
+        </a>
+
+
+        <div class="page-title">
+            <h2>Medical Report Review</h2>
+            <p>Clinical review of a report requiring further assessment.</p>
+        </div>
+
+
+        <!-- NEEDS REVIEW STATUS -->
+
+        <div class="status-warning">
+
+            <strong>⚠ Doctor Review Required</strong>
+
+            This report could not be sent for automated prediction because
+            all clinical features required by the machine-learning model
+            were not available from the uploaded report.
+
+        </div>
+
+
+        <!-- PATIENT INFORMATION -->
+
+        <div class="card">
+
+            <div class="card-title">
+                Patient Information
+            </div>
+
+            <div class="grid">
+
+                <div class="info-item">
+                    <span class="label">Patient Name</span>
+                    <span class="value">
+                        {{ report.patient_name or 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Email</span>
+                    <span class="value">
+                        {{ report.patient_email or 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Phone</span>
+                    <span class="value">
+                        {{ report.patient_phone or 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Report ID</span>
+                    <span class="value">
+                        #{{ report.report_id }}
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- REPORT INFORMATION -->
+
+        <div class="card">
+
+            <div class="card-title">
+                Medical Report
+            </div>
+
+            <div class="grid">
+
+                <div class="info-item">
+                    <span class="label">File Name</span>
+                    <span class="value">
+                        {{ report.original_file_name }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Report Type</span>
+                    <span class="value">
+                        {{ report.report_type }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Processing Status</span>
+                    <span class="value">
+                        {{ report.processing_status }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Uploaded</span>
+                    <span class="value">
+                        {{ report.uploaded_at }}
+                    </span>
+                </div>
+
+            </div>
+
+            <br>
+
+            <a
+                href="{{ url_for('doctor_view_report', report_id=report.report_id) }}"
+                target="_blank"
+                class="report-btn"
+            >
+                View Original Report
+            </a>
+
+        </div>
+
+
+        <!-- EXTRACTED CLINICAL INFORMATION -->
+
+        <div class="card">
+
+            <div class="card-title">
+                Extracted Clinical Information
+            </div>
+
+
+            <h3 class="section-heading">
+                ML Model Features
+            </h3>
+
+            <div class="grid">
+
+                <div class="info-item">
+                    <span class="label">Age</span>
+                    <span class="value">
+                        {{ report.age if report.age is not none else 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Sex</span>
+                    <span class="value">
+                        {% if report.sex == 1 %}
+                            Male
+                        {% elif report.sex == 0 %}
+                            Female
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Chest Pain Type</span>
+                    <span class="value">
+                        {{ report.chest_pain_type if report.chest_pain_type is not none else 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Resting Blood Pressure</span>
+                    <span class="value">
+                        {{ report.resting_bp if report.resting_bp is not none else 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Cholesterol</span>
+                    <span class="value">
+                        {{ report.cholesterol if report.cholesterol is not none else 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Fasting Blood Sugar</span>
+                    <span class="value">
+                        {{ report.fasting_blood_sugar if report.fasting_blood_sugar is not none else 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Resting ECG</span>
+                    <span class="value">
+                        {{ report.resting_ecg if report.resting_ecg is not none else 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Maximum Heart Rate</span>
+                    <span class="value">
+                        {{ report.max_heart_rate if report.max_heart_rate is not none else 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Exercise Angina</span>
+                    <span class="value">
+                        {{ report.exercise_angina if report.exercise_angina is not none else 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Oldpeak</span>
+                    <span class="value">
+                        {{ report.oldpeak if report.oldpeak is not none else 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">ST Slope</span>
+                    <span class="value">
+                        {{ report.st_slope if report.st_slope is not none else 'Not available' }}
+                    </span>
+                </div>
+
+            </div>
+
+
+            <h3 class="section-heading">
+                ECG-Specific Measurements
+            </h3>
+
+            <div class="grid">
+
+                <div class="info-item">
+                    <span class="label">ECG Quality</span>
+                    <span class="value">
+                        {{ report.ecg_quality or 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Ventricular Rate</span>
+                    <span class="value">
+                        {% if report.ventricular_rate is not none %}
+                            {{ report.ventricular_rate }} bpm
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">PR Interval</span>
+                    <span class="value">
+                        {% if report.pr_interval is not none %}
+                            {{ report.pr_interval }} ms
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">QRS Duration</span>
+                    <span class="value">
+                        {% if report.qrs_duration is not none %}
+                            {{ report.qrs_duration }} ms
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">QTc Interval</span>
+                    <span class="value">
+                        {% if report.qtc_interval is not none %}
+                            {{ report.qtc_interval }} ms
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Cardiac Axis</span>
+                    <span class="value">
+                        {% if report.cardiac_axis is not none %}
+                            {{ report.cardiac_axis }}°
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Sinus Rhythm</span>
+                    <span class="value">
+                        {% if report.sinus_rhythm == 1 %}
+                            Yes
+                        {% elif report.sinus_rhythm == 0 %}
+                            No
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">AV Conduction</span>
+                    <span class="value">
+                        {{ report.av_conduction or 'Not available' }}
+                    </span>
+                </div>
+
+            </div>
+
+
+            <h3 class="section-heading">
+                Extraction Information
+            </h3>
+
+            <div class="grid">
+
+                <div class="info-item">
+                    <span class="label">Extraction Method</span>
+                    <span class="value">
+                        {{ report.extraction_method or 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Validation Status</span>
+                    <span class="value">
+                        {{ report.validation_status or 'Not available' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Extraction Confidence</span>
+                    <span class="value">
+                        {% if report.extraction_confidence is not none %}
+                            {{ "%.2f"|format(report.extraction_confidence * 100) }}%
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="label">Doctor Verified</span>
+                    <span class="value">
+                        {% if report.doctor_verified == 1 %}
+                            Yes
+                        {% else %}
+                            No
+                        {% endif %}
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- EXISTING REVIEW -->
+
+        {% if doctor_review %}
+
+        <div class="card">
+
+            <div class="card-title">
+                Previous Doctor Review
+            </div>
+
+            <div class="review-box">
+
+                <p>
+                    <strong>Status:</strong>
+                    <span class="review-status">
+                        {{ doctor_review.review_status }}
+                    </span>
+                </p>
+
+                <p>
+                    <strong>Decision:</strong>
+                    {{ doctor_review.doctor_decision or 'Not provided' }}
+                </p>
+
+                <p>
+                    <strong>Diagnosis Notes:</strong>
+                </p>
+
+                <p>
+                    {{ doctor_review.diagnosis_notes or 'No notes provided.' }}
+                </p>
+
+                <p>
+                    <strong>Recommendations:</strong>
+                </p>
+
+                <p>
+                    {{ doctor_review.recommendations or 'No recommendations provided.' }}
+                </p>
+
+                {% if doctor_review.reviewed_at %}
+                <p>
+                    <strong>Reviewed At:</strong>
+                    {{ doctor_review.reviewed_at }}
+                </p>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- DOCTOR REVIEW FORM -->
+
+        <div class="card">
+
+            <div class="card-title">
+                Doctor Clinical Review
+            </div>
+
+            <form
+                method="POST"
+                action="{{ url_for('submit_report_doctor_review', report_id=report.report_id) }}"
+            >
+
+                <div class="form-group">
+
+                    <label for="doctor_decision">
+                        Clinical Decision *
+                    </label>
+
+                    <select
+                        id="doctor_decision"
+                        name="doctor_decision"
+                        required
+                    >
+
+                        <option value="">
+                            Select clinical decision
+                        </option>
+
+                        <option value="LOW_RISK">
+                            Low Risk
+                        </option>
+
+                        <option value="MODERATE_RISK">
+                            Moderate Risk
+                        </option>
+
+                        <option value="HIGH_RISK">
+                            High Risk
+                        </option>
+
+                        <option value="INCONCLUSIVE">
+                            Inconclusive
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="diagnosis_notes">
+                        Diagnosis / Clinical Notes
+                    </label>
+
+                    <textarea
+                        id="diagnosis_notes"
+                        name="diagnosis_notes"
+                        placeholder="Enter your clinical observations and diagnosis notes..."
+                    ></textarea>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="recommendations">
+                        Recommendations
+                    </label>
+
+                    <textarea
+                        id="recommendations"
+                        name="recommendations"
+                        placeholder="Enter follow-up advice, additional tests, referral recommendations, or other clinical guidance..."
+                    ></textarea>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="submit-btn"
+                >
+                    Submit Doctor Review
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

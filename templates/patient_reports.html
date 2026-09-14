@@ -138,6 +138,7 @@
                         <th>File Name</th>
                         <th>Status</th>
                         <th>Uploaded</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
 
@@ -185,6 +186,13 @@
 
                         <td>
                             {{ report.uploaded_at }}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('patient_view_report', report_id=report.report_id) }}"
+                            target="_blank"
+                            style="color: #2563eb; text-decoration: none; font-weight: bold;">
+                                View Report
+                            </a>
                         </td>
 
                     </tr>
