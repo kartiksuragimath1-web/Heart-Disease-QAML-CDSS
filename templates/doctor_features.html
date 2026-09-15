@@ -485,22 +485,178 @@
                             <form
                                 method="POST"
                                 action="{{ url_for('verify_clinical_features', extraction_id=feature.extraction_id) }}"
-                                style="display: inline;"
+                                style="margin-top: 15px;"
                             >
+
+                                <div style="
+                                    background: #fff7ed;
+                                    border: 1px solid #fed7aa;
+                                    padding: 15px;
+                                    border-radius: 10px;
+                                    margin-bottom: 15px;
+                                ">
+                                    <strong>⚠ Feature Verification Required</strong>
+
+                                    <p style="
+                                        margin: 8px 0 0;
+                                        color: #7c2d12;
+                                        font-size: 14px;
+                                    ">
+                                        Review the extracted values against the original medical
+                                        report. Enter any missing required model features before
+                                        verification.
+                                    </p>
+                                </div>
+
+                                <div style="
+                                    display: grid;
+                                    grid-template-columns: repeat(3, 1fr);
+                                    gap: 12px;
+                                    margin-bottom: 15px;
+                                ">
+
+                                    <div class="feature">
+                                        <div class="label">Age</div>
+                                        <input
+                                            type="number"
+                                            name="age"
+                                            value="{{ feature.age if feature.age is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">Sex</div>
+                                        <input
+                                            type="number"
+                                            name="sex"
+                                            value="{{ feature.sex if feature.sex is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">Chest Pain Type</div>
+                                        <input
+                                            type="number"
+                                            name="chest_pain_type"
+                                            value="{{ feature.chest_pain_type if feature.chest_pain_type is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">Resting BP</div>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            name="resting_bp"
+                                            value="{{ feature.resting_bp if feature.resting_bp is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">Cholesterol</div>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            name="cholesterol"
+                                            value="{{ feature.cholesterol if feature.cholesterol is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">Fasting Blood Sugar</div>
+                                        <input
+                                            type="number"
+                                            name="fasting_blood_sugar"
+                                            value="{{ feature.fasting_blood_sugar if feature.fasting_blood_sugar is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">Resting ECG</div>
+                                        <input
+                                            type="number"
+                                            name="resting_ecg"
+                                            value="{{ feature.resting_ecg if feature.resting_ecg is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">Max Heart Rate</div>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            name="max_heart_rate"
+                                            value="{{ feature.max_heart_rate if feature.max_heart_rate is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">Exercise Angina</div>
+                                        <input
+                                            type="number"
+                                            name="exercise_angina"
+                                            value="{{ feature.exercise_angina if feature.exercise_angina is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">Oldpeak</div>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            name="oldpeak"
+                                            value="{{ feature.oldpeak if feature.oldpeak is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                    <div class="feature">
+                                        <div class="label">ST Slope</div>
+                                        <input
+                                            type="number"
+                                            name="st_slope"
+                                            value="{{ feature.st_slope if feature.st_slope is not none else '' }}"
+                                            required
+                                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:7px;"
+                                        >
+                                    </div>
+
+                                </div>
+
                                 <button
                                     type="submit"
                                     style="
                                         background: #2563eb;
                                         color: white;
                                         border: none;
-                                        padding: 11px 20px;
+                                        padding: 12px 22px;
                                         border-radius: 8px;
                                         font-weight: bold;
                                         cursor: pointer;
                                     "
                                 >
-                                    ✓ Verify Clinical Features
+                                    ✓ Save & Verify Clinical Features
                                 </button>
+
                             </form>
 
                         {% endif %}

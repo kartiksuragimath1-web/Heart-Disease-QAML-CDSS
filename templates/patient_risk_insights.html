@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Risk Insights - HeartQAML</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #1f2937;
+        }
+
+        .topbar {
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 18px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .nav {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1150px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .header {
+            margin-bottom: 28px;
+        }
+
+        .header h1 {
+            margin: 0 0 8px;
+            font-size: 32px;
+        }
+
+        .header p {
+            margin: 0;
+            color: #6b7280;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        }
+
+        .stat-title {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 30px;
+            font-weight: 700;
+        }
+
+        .latest-card {
+            margin-bottom: 28px;
+        }
+
+        .latest-card h2 {
+            margin-top: 0;
+        }
+
+        .risk {
+            font-size: 34px;
+            font-weight: 700;
+            margin: 12px 0;
+        }
+
+        .probability {
+            font-size: 18px;
+            color: #4b5563;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .detail {
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 10px;
+        }
+
+        .detail-label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+        }
+
+        .notice {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 28px;
+        }
+
+        .notice h3 {
+            margin-top: 0;
+        }
+
+        .notice p {
+            margin-bottom: 0;
+            line-height: 1.6;
+            color: #4b5563;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 18px;
+            border-radius: 9px;
+            text-decoration: none;
+            font-weight: 600;
+            background: #111827;
+            color: #ffffff;
+        }
+
+        .button.secondary {
+            background: #ffffff;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 45px 20px;
+            color: #6b7280;
+        }
+
+        @media (max-width: 800px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .details {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                padding: 16px 20px;
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .nav {
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <div class="brand">
+        ♥ HeartQAML
+    </div>
+
+    <nav class="nav">
+        <a href="{{ url_for('patient_dashboard') }}">
+            Dashboard
+        </a>
+
+        <a href="{{ url_for('upload_report') }}">
+            Upload Report
+        </a>
+
+        <a href="{{ url_for('logout') }}">
+            Logout
+        </a>
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <section class="header">
+
+        <h1>Risk Insights</h1>
+
+        <p>
+            Review your completed HeartQAML AI assessments and
+            their stored risk information.
+        </p>
+
+    </section>
+
+
+    <section class="grid">
+
+        <div class="card">
+            <div class="stat-title">
+                Completed AI Assessments
+            </div>
+
+            <div class="stat-value">
+                {{ total_predictions }}
+            </div>
+        </div>
+
+
+        <div class="card">
+            <div class="stat-title">
+                Moderate Risk Assessments
+            </div>
+
+            <div class="stat-value">
+                {{ moderate_risk_count }}
+            </div>
+        </div>
+
+
+        <div class="card">
+            <div class="stat-title">
+                High Risk Assessments
+            </div>
+
+            <div class="stat-value">
+                {{ high_risk_count }}
+            </div>
+        </div>
+
+    </section>
+
+
+    <section class="card latest-card">
+
+        <h2>Latest Completed Assessment</h2>
+
+        {% if latest_prediction %}
+
+            <div class="risk">
+                {{ latest_prediction.risk_level or "Not available" }}
+            </div>
+
+            <div class="probability">
+                AI Risk Probability:
+                <strong>
+                    {{ latest_prediction.risk_probability_percent }}%
+                </strong>
+            </div>
+
+
+            <div class="details">
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Assessment ID
+                    </div>
+
+                    <div class="detail-value">
+                        #{{ latest_prediction.prediction_id }}
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        AI Model
+                    </div>
+
+                    <div class="detail-value">
+                        {{ latest_prediction.model_name }}
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Model Version
+                    </div>
+
+                    <div class="detail-value">
+                        {{ latest_prediction.model_version }}
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Report Type
+                    </div>
+
+                    <div class="detail-value">
+                        {{ latest_prediction.report_type }}
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Report
+                    </div>
+
+                    <div class="detail-value">
+                        {{ latest_prediction.original_file_name }}
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Assessment Status
+                    </div>
+
+                    <div class="detail-value">
+                        {{ latest_prediction.prediction_status }}
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="actions" style="margin-top: 24px;">
+
+                <a
+                    class="button"
+                    href="{{ url_for(
+                        'prediction_result',
+                        extraction_id=latest_prediction.extraction_id
+                    ) }}"
+                >
+                    View Assessment
+                </a>
+
+                <a
+                    class="button secondary"
+                    href="{{ url_for('patient_prediction_history') }}"
+                >
+                    View All Assessments
+                </a>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty">
+
+                <h3>No completed AI assessment yet</h3>
+
+                <p>
+                    Upload a supported medical report to begin the
+                    assessment workflow.
+                </p>
+
+                <div class="actions" style="justify-content:center; margin-top:20px;">
+
+                    <a
+                        class="button"
+                        href="{{ url_for('upload_report') }}"
+                    >
+                        Upload Report
+                    </a>
+
+                </div>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+
+    <section class="notice">
+
+        <h3>Clinical Decision Support Notice</h3>
+
+        <p>
+            HeartQAML risk information is generated from the available
+            clinical information and machine-learning assessment.
+            It is intended to support clinical decision-making and is
+            not a medical diagnosis. A qualified healthcare professional
+            should review the assessment together with the underlying
+            clinical information.
+        </p>
+
+    </section>
+
+
+    <div class="actions">
+
+        <a
+            class="button secondary"
+            href="{{ url_for('patient_dashboard') }}"
+        >
+            ← Back to Dashboard
+        </a>
+
+        <a
+            class="button"
+            href="{{ url_for('patient_prediction_history') }}"
+        >
+            QAML Results
+        </a>
+
+    </div>
+
+</main>
+
+</body>
+</html>

@@ -1416,6 +1416,213 @@ def patient_view_report(report_id):
 
         cursor.close()
         connection.close()
+
+# ============================================================
+# PATIENT RISK INSIGHTS
+# ============================================================
+
+@app.route("/patient/risk-insights")
+def patient_risk_insights():
+
+    # ========================================================
+    # LOGIN CHECK
+    # ========================================================
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "patient":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    patient_id = session["user_id"]
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return render_template(
+            "patient_risk_insights.html",
+            name=session.get("full_name"),
+            latest_prediction=None,
+            total_predictions=0,
+            low_risk_count=0,
+            moderate_risk_count=0,
+            high_risk_count=0
+        )
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        # ====================================================
+        # 1. LATEST COMPLETED AI ASSESSMENT
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.extraction_id,
+                p.prediction_result,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.qaml_prediction,
+                p.qaml_quantum_score,
+                p.created_at,
+
+                m.report_id,
+                m.report_type,
+                m.original_file_name
+
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            WHERE m.patient_id = %s
+              AND p.prediction_status = 'COMPLETED'
+
+            ORDER BY p.created_at DESC
+
+            LIMIT 1
+            """,
+            (patient_id,)
+        )
+
+        latest_prediction = cursor.fetchone()
+
+        if latest_prediction:
+            latest_prediction["risk_probability_percent"] = round(
+                float(latest_prediction["risk_probability"]) * 100,
+                2
+            )
+
+        # ====================================================
+        # 2. TOTAL COMPLETED ASSESSMENTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_predictions
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            WHERE m.patient_id = %s
+              AND p.prediction_status = 'COMPLETED'
+            """,
+            (patient_id,)
+        )
+
+        total_predictions = cursor.fetchone()["total_predictions"] or 0
+
+        # ====================================================
+        # 3. RISK LEVEL SUMMARY
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                risk_level,
+                COUNT(*) AS risk_count
+
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            WHERE m.patient_id = %s
+              AND p.prediction_status = 'COMPLETED'
+
+            GROUP BY risk_level
+            """,
+            (patient_id,)
+        )
+
+        risk_summary = cursor.fetchall()
+
+        low_risk_count = 0
+        moderate_risk_count = 0
+        high_risk_count = 0
+
+        for row in risk_summary:
+
+            if row["risk_level"] == "LOW":
+                low_risk_count = row["risk_count"]
+
+            elif row["risk_level"] == "MODERATE":
+                moderate_risk_count = row["risk_count"]
+
+            elif row["risk_level"] == "HIGH":
+                high_risk_count = row["risk_count"]
+
+        # ====================================================
+        # 4. SEND DATA TO PAGE
+        # ====================================================
+
+        return render_template(
+            "patient_risk_insights.html",
+
+            name=session.get("full_name"),
+
+            latest_prediction=latest_prediction,
+
+            total_predictions=total_predictions,
+
+            low_risk_count=low_risk_count,
+
+            moderate_risk_count=moderate_risk_count,
+
+            high_risk_count=high_risk_count
+        )
+
+    except Exception as e:
+
+        print(
+            "Patient risk insights database error:",
+            e
+        )
+
+        flash(
+            "Unable to load risk insights.",
+            "danger"
+        )
+
+        return render_template(
+            "patient_risk_insights.html",
+
+            name=session.get("full_name"),
+
+            latest_prediction=None,
+
+            total_predictions=0,
+
+            low_risk_count=0,
+
+            moderate_risk_count=0,
+
+            high_risk_count=0
+        )
+
+    finally:
+
+        cursor.close()
+        connection.close()
 # ============================================================
 # PATIENT DOCTOR REVIEWS
 # ============================================================
@@ -2289,7 +2496,90 @@ def submit_report_doctor_review(report_id):
                     recommendations
                 )
             )
-        # Mark the medical report as reviewed
+        # ============================================================
+        # VALIDATE EXTRACTED FEATURES BEFORE MARKING REPORT PROCESSED
+        # ============================================================
+
+        cursor.execute(
+            """
+            SELECT
+                age,
+                sex,
+                chest_pain_type,
+                resting_bp,
+                cholesterol,
+                fasting_blood_sugar,
+                resting_ecg,
+                max_heart_rate,
+                exercise_angina,
+                oldpeak,
+                st_slope
+            FROM extracted_features
+            WHERE report_id = %s
+            LIMIT 1
+            """,
+            (report_id,)
+        )
+
+        extracted = cursor.fetchone()
+
+        required_features = [
+            "age",
+            "sex",
+            "chest_pain_type",
+            "resting_bp",
+            "cholesterol",
+            "fasting_blood_sugar",
+            "resting_ecg",
+            "max_heart_rate",
+            "exercise_angina",
+            "oldpeak",
+            "st_slope"
+        ]
+
+        missing_features = [
+            feature
+            for feature in required_features
+            if extracted is None or extracted.get(feature) is None
+        ]
+
+        if missing_features:
+            # Do NOT allow incomplete extraction to become VALID.
+            cursor.execute(
+                """
+                UPDATE medical_reports
+                SET processing_status = 'NEEDS_REVIEW'
+                WHERE report_id = %s
+                """,
+                (report_id,)
+            )
+
+            cursor.execute(
+                """
+                UPDATE extracted_features
+                SET validation_status = 'NEEDS_REVIEW',
+                    doctor_verified = 0
+                WHERE report_id = %s
+                """,
+                (report_id,)
+            )
+
+            connection.commit()
+
+            flash(
+                "Doctor review saved, but the report still requires "
+                "feature verification. Missing: "
+                + ", ".join(missing_features),
+                "warning"
+            )
+
+            return redirect(
+                url_for(
+                    "doctor_features"
+                )
+            )
+
+        # All 11 model-required features are available.
         cursor.execute(
             """
             UPDATE medical_reports
@@ -2298,11 +2588,12 @@ def submit_report_doctor_review(report_id):
             """,
             (report_id,)
         )
-        # Mark the extraction as reviewed
+
         cursor.execute(
             """
             UPDATE extracted_features
-            SET validation_status = 'VALID'
+            SET validation_status = 'VALID',
+                doctor_verified = 1
             WHERE report_id = %s
             """,
             (report_id,)
@@ -2489,9 +2780,9 @@ def verify_clinical_features(extraction_id):
     cursor = connection.cursor(dictionary=True)
 
     try:
-                # ====================================================
+        # ============================================================
         # VERIFY DOCTOR PROFILE
-        # ====================================================
+        # ============================================================
 
         cursor.execute(
             """
@@ -2508,39 +2799,42 @@ def verify_clinical_features(extraction_id):
         doctor = cursor.fetchone()
 
         if doctor is None:
-            flash(
-                "Doctor profile not found.",
-                "danger"
-            )
-            return redirect(
-                url_for("doctor_dashboard")
-            )
+            flash("Doctor profile not found.", "danger")
+            return redirect(url_for("doctor_dashboard"))
 
         if doctor["verification_status"] != "VERIFIED":
             flash(
                 "Access denied. Your doctor profile is not verified.",
                 "danger"
             )
-            return redirect(
-                url_for("doctor_dashboard")
-            )
+            return redirect(url_for("doctor_dashboard"))
+
+        # ============================================================
+        # GET CURRENT EXTRACTION
+        # ============================================================
 
         cursor.execute(
             """
             SELECT
-                age,
-                sex,
-                chest_pain_type,
-                resting_bp,
-                cholesterol,
-                fasting_blood_sugar,
-                resting_ecg,
-                max_heart_rate,
-                exercise_angina,
-                oldpeak,
-                st_slope
-            FROM extracted_features
-            WHERE extraction_id = %s
+                e.extraction_id,
+                e.report_id,
+                m.patient_id,
+                e.age,
+                e.sex,
+                e.chest_pain_type,
+                e.resting_bp,
+                e.cholesterol,
+                e.fasting_blood_sugar,
+                e.resting_ecg,
+                e.max_heart_rate,
+                e.exercise_angina,
+                e.oldpeak,
+                e.st_slope
+            FROM extracted_features e
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+            WHERE e.extraction_id = %s
+            LIMIT 1
             """,
             (extraction_id,)
         )
@@ -2551,7 +2845,11 @@ def verify_clinical_features(extraction_id):
             flash("Clinical feature record not found.", "danger")
             return redirect(url_for("doctor_features"))
 
-        required_fields = [
+        # ============================================================
+        # READ VALUES ENTERED / VERIFIED BY DOCTOR
+        # ============================================================
+
+        field_names = [
             "age",
             "sex",
             "chest_pain_type",
@@ -2565,32 +2863,118 @@ def verify_clinical_features(extraction_id):
             "st_slope"
         ]
 
+        submitted_values = {}
+        print("FORM DATA:", request.form.to_dict())
+        for field in field_names:
+            value = request.form.get(field, "").strip()
+
+            if value == "":
+                submitted_values[field] = None
+            else:
+                try:
+                    submitted_values[field] = float(value)
+                except ValueError:
+                    flash(
+                        f"Invalid value entered for {field}.",
+                        "warning"
+                    )
+                    return redirect(url_for("doctor_features"))
+
+        # ============================================================
+        # CHECK THAT ALL 11 MODEL FEATURES ARE AVAILABLE
+        # ============================================================
+
         missing_fields = [
             field
-            for field in required_fields
-            if extraction[field] is None
+            for field in field_names
+            if submitted_values[field] is None
         ]
 
         if missing_fields:
             flash(
-                "Verification blocked. Required clinical features are missing.",
+                "Verification blocked. Missing required clinical features: "
+                + ", ".join(missing_fields),
                 "warning"
             )
             return redirect(url_for("doctor_features"))
 
+        # ============================================================
+        # SAVE DOCTOR-VERIFIED VALUES
+        # ============================================================
+
         cursor.execute(
             """
             UPDATE extracted_features
-            SET doctor_verified = 1,
+            SET
+                age = %s,
+                sex = %s,
+                chest_pain_type = %s,
+                resting_bp = %s,
+                cholesterol = %s,
+                fasting_blood_sugar = %s,
+                resting_ecg = %s,
+                max_heart_rate = %s,
+                exercise_angina = %s,
+                oldpeak = %s,
+                st_slope = %s,
+                doctor_verified = 1,
                 validation_status = 'VALID'
             WHERE extraction_id = %s
             """,
-            (extraction_id,)
+            (
+                submitted_values["age"],
+                submitted_values["sex"],
+                submitted_values["chest_pain_type"],
+                submitted_values["resting_bp"],
+                submitted_values["cholesterol"],
+                submitted_values["fasting_blood_sugar"],
+                submitted_values["resting_ecg"],
+                submitted_values["max_heart_rate"],
+                submitted_values["exercise_angina"],
+                submitted_values["oldpeak"],
+                submitted_values["st_slope"],
+                extraction_id
+            )
+        )
+
+        # ============================================================
+        # MARK REPORT AS PROCESSED
+        # ============================================================
+
+        cursor.execute(
+            """
+            UPDATE medical_reports
+            SET processing_status = 'PROCESSED'
+            WHERE report_id = %s
+            """,
+            (extraction["report_id"],)
         )
 
         connection.commit()
 
-        flash("Clinical features verified successfully.", "success")
+        print("FEATURE VERIFICATION COMMITTED")
+        print("PATIENT ID:", extraction["patient_id"])
+        print("EXTRACTION ID:", extraction_id)
+
+        # ============================================================
+        # RUN AI PREDICTION AFTER SUCCESSFUL FEATURE VERIFICATION
+        # ============================================================
+
+        prediction_success = predict_from_extraction(
+            extraction["patient_id"],
+            extraction_id
+        )
+
+        if prediction_success:
+            flash(
+                "Clinical features verified and AI assessment generated successfully.",
+                "success"
+            )
+        else:
+            flash(
+                "Clinical features verified, but AI assessment could not be generated.",
+                "warning"
+            )
 
         return redirect(url_for("doctor_features"))
 
@@ -2600,7 +2984,10 @@ def verify_clinical_features(extraction_id):
 
         print("Clinical feature verification error:", e)
 
-        flash("Unable to verify clinical features.", "danger")
+        flash(
+            "Unable to verify clinical features.",
+            "danger"
+        )
 
         return redirect(url_for("doctor_features"))
 
@@ -3053,6 +3440,8 @@ def doctor_case_details(prediction_id):
         )
 
         doctor_review = cursor.fetchone()
+
+        print("DOCTOR CASE REVIEW:", doctor_review)
 
         # ====================================================
         # CALCULATE DISPLAY VALUES
@@ -3946,88 +4335,125 @@ def prediction_result(extraction_id):
     # ========================================================
 
     if "user_id" not in session:
-        flash(
-            "Please login first.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("login")
-        )
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
 
     if session.get("role") != "patient":
-        flash(
-            "Access denied.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("home")
-        )
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
 
     connection = get_db_connection()
 
     if connection is None:
+        flash("Database connection failed.", "danger")
+        return redirect(url_for("patient_dashboard"))
 
-        flash(
-            "Database connection failed.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("patient_dashboard")
-        )
-
-    cursor = connection.cursor(
-        dictionary=True
-    )
+    cursor = connection.cursor(dictionary=True)
 
     try:
 
-        query = """
-        SELECT
-            p.prediction_id,
-            p.prediction_result,
-            p.risk_probability,
-            p.qaml_prediction,
-            p.qaml_quantum_score,
-            p.risk_level,
-            p.model_name,
-            p.model_version,
-            p.prediction_status,
-            p.created_at,
-
-            e.age,
-            e.sex,
-            e.chest_pain_type,
-            e.resting_bp,
-            e.cholesterol,
-            e.fasting_blood_sugar,
-            e.resting_ecg,
-            e.max_heart_rate,
-            e.exercise_angina,
-            e.oldpeak,
-            e.st_slope,
-
-            e.extraction_confidence,
-            e.validation_status
-
-        FROM predictions p
-
-        INNER JOIN extracted_features e
-            ON p.extraction_id = e.extraction_id
-
-        WHERE
-            p.extraction_id = %s
-            AND p.patient_id = %s
-
-        ORDER BY p.prediction_id DESC
-
-        LIMIT 1
-        """
+        # ====================================================
+        # LOAD EXTRACTION + REPORT
+        # ====================================================
 
         cursor.execute(
-            query,
+            """
+            SELECT
+                e.extraction_id,
+                e.report_id,
+
+                e.age,
+                e.sex,
+                e.chest_pain_type,
+                e.resting_bp,
+                e.cholesterol,
+                e.fasting_blood_sugar,
+                e.resting_ecg,
+                e.max_heart_rate,
+                e.exercise_angina,
+                e.oldpeak,
+                e.st_slope,
+
+                e.ecg_quality,
+                e.ventricular_rate,
+                e.pr_interval,
+                e.qrs_duration,
+                e.qtc_interval,
+                e.cardiac_axis,
+                e.sinus_rhythm,
+                e.av_conduction,
+
+                e.extraction_confidence,
+                e.validation_status,
+
+                m.report_id AS medical_report_id,
+                m.report_type,
+                m.original_file_name,
+                m.processing_status
+
+            FROM extracted_features e
+
+            INNER JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            WHERE
+                e.extraction_id = %s
+                AND m.patient_id = %s
+
+            LIMIT 1
+            """,
+            (
+                extraction_id,
+                session["user_id"]
+            )
+        )
+
+        extraction = cursor.fetchone()
+
+        if extraction is None:
+            flash(
+                "Assessment information not found.",
+                "danger"
+            )
+            return redirect(
+                url_for("patient_dashboard")
+            )
+
+        report = {
+            "report_id": extraction["report_id"],
+            "report_type": extraction["report_type"],
+            "processing_status": extraction["processing_status"],
+            "original_file_name": extraction["original_file_name"],
+        }
+        # ====================================================
+        # LOAD AI PREDICTION IF ONE EXISTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.extraction_id,
+                p.prediction_result,
+                p.risk_probability,
+                p.qaml_prediction,
+                p.qaml_quantum_score,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.created_at
+
+            FROM predictions p
+
+            WHERE
+                p.extraction_id = %s
+                AND p.patient_id = %s
+
+            ORDER BY p.prediction_id DESC
+
+            LIMIT 1
+            """,
             (
                 extraction_id,
                 session["user_id"]
@@ -4036,67 +4462,149 @@ def prediction_result(extraction_id):
 
         prediction = cursor.fetchone()
 
-        if prediction is None:
-
-            flash(
-                "Prediction result not found.",
-                "danger"
-            )
-
-            return redirect(
-                url_for("patient_dashboard")
-            )
-
-
         # ====================================================
-        # DOCTOR REVIEW
+        # AI PREDICTION EXISTS
         # ====================================================
 
-        cursor.execute(
-            """
-            SELECT
-                review_status,
-                doctor_decision,
-                diagnosis_notes,
-                recommendations,
-                prediction_agreement,
-                reviewed_at
-            FROM doctor_reviews
-            WHERE prediction_id = %s
-            ORDER BY review_id DESC
-            LIMIT 1
-            """,
-            (prediction["prediction_id"],)
-        )
+        if prediction is not None:
 
-        prediction["doctor_review"] = cursor.fetchone()
+            # Add extraction information to prediction object
+            prediction.update({
+                "extraction_id": extraction["extraction_id"],
+                "report_id": extraction["report_id"],
+                "report_type": extraction["report_type"],
+                "original_file_name": extraction["original_file_name"],
+                "processing_status": extraction["processing_status"],
 
+                "age": extraction["age"],
+                "sex": extraction["sex"],
+                "chest_pain_type": extraction["chest_pain_type"],
+                "resting_bp": extraction["resting_bp"],
+                "cholesterol": extraction["cholesterol"],
+                "fasting_blood_sugar": extraction["fasting_blood_sugar"],
+                "resting_ecg": extraction["resting_ecg"],
+                "max_heart_rate": extraction["max_heart_rate"],
+                "exercise_angina": extraction["exercise_angina"],
+                "oldpeak": extraction["oldpeak"],
+                "st_slope": extraction["st_slope"],
 
-        # Convert probability to percentage
-        prediction["risk_probability_percent"] = round(
-            float(
-                prediction["risk_probability"]
-            ) * 100,
-            2
-        )
+                "extraction_confidence":
+                    extraction["extraction_confidence"],
 
-        # Human-readable result
-        if prediction["prediction_result"] == 1:
+                "validation_status":
+                    extraction["validation_status"]
+            })
 
-            prediction["result_text"] = (
-                "Heart Disease Risk Detected"
+            # =================================================
+            # DOCTOR REVIEW OF AI PREDICTION
+            # =================================================
+
+            cursor.execute(
+                """
+                SELECT
+                    review_status,
+                    doctor_decision,
+                    diagnosis_notes,
+                    recommendations,
+                    prediction_agreement,
+                    reviewed_at
+
+                FROM doctor_reviews
+
+                WHERE prediction_id = %s
+
+                ORDER BY review_id DESC
+
+                LIMIT 1
+                """,
+                (prediction["prediction_id"],)
             )
 
-        else:
+            prediction["doctor_review"] = cursor.fetchone()
 
-            prediction["result_text"] = (
-                "No Heart Disease Risk Detected"
+            # Convert probability to percentage
+            prediction["risk_probability_percent"] = round(
+                float(prediction["risk_probability"]) * 100,
+                2
             )
 
-        return render_template(
-            "prediction_result.html",
-            prediction=prediction,
-            name=session.get("full_name")
+            # Human-readable result
+            if prediction["prediction_result"] == 1:
+                prediction["result_text"] = (
+                    "Heart Disease Risk Detected"
+                )
+            else:
+                prediction["result_text"] = (
+                    "No Heart Disease Risk Detected"
+                )
+
+            return render_template(
+                "prediction_result.html",
+                prediction=prediction,
+                report=report,
+                assessment_state="AI_PREDICTION",
+                name=session.get("full_name")
+            )
+
+        # ====================================================
+        # NO AI PREDICTION
+        # ====================================================
+        # This is expected when extraction is NEEDS_REVIEW.
+        # AI prediction must NOT be generated from incomplete
+        # or unvalidated clinical information.
+        # ====================================================
+
+        if extraction["validation_status"] == "NEEDS_REVIEW":
+
+            cursor.execute(
+                """
+                SELECT
+                    review_id,
+                    review_status,
+                    doctor_decision,
+                    diagnosis_notes,
+                    recommendations,
+                    reviewed_at
+
+                FROM report_doctor_reviews
+
+                WHERE report_id = %s
+
+                ORDER BY review_id DESC
+
+                LIMIT 1
+                """,
+                (extraction["report_id"],)
+            )
+
+            report_review = cursor.fetchone()
+
+            return render_template(
+                "prediction_result.html",
+                prediction=None,
+                extraction=extraction,
+                report=report,
+                report_review=report_review,
+                assessment_state=(
+                    "DOCTOR_REVIEW_COMPLETED"
+                    if report_review
+                    else "DOCTOR_REVIEW_REQUIRED"
+                ),
+                name=session.get("full_name")
+            )
+
+        # ====================================================
+        # SAFE FALLBACK FOR INCONSISTENT DATA
+        # ====================================================
+
+        flash(
+            "This assessment cannot currently be displayed because "
+            "its prediction state is inconsistent.",
+            "warning"
+        )
+
+        return redirect(
+            url_for("patient_dashboard")
         )
 
     except Exception as e:
@@ -4107,7 +4615,7 @@ def prediction_result(extraction_id):
         )
 
         flash(
-            "Unable to load prediction result.",
+            "Unable to load assessment result.",
             "danger"
         )
 
@@ -4119,7 +4627,6 @@ def prediction_result(extraction_id):
 
         cursor.close()
         connection.close()
-
         
 # ============================================================
 # HEART DISEASE PREDICTION

@@ -96,8 +96,19 @@ def extract_features(text):
             features["chest_pain_type"] = value
 
     # RESTING BLOOD PRESSURE
+    #
+    # Supports explicitly labelled formats such as:
+    # Resting BP 128
+    # Resting BP: 128
+    # BP: 128/82
+    # BP 128/82
+    # Blood Pressure: 130
+    # Blood Pressure 130/80
+    #
+    # If systolic/diastolic is present, only the explicitly
+    # labelled systolic value is used for resting_bp.
     match = re.search(
-        r"\b(?:Resting\s*)?(?:Blood\s*)?Pressure\s*[:\-]?\s*(\d{2,3})\b",
+        r"\b(?:Resting\s*)?(?:Blood\s*Pressure|BP)\s*[:\-]?\s*(\d{2,3})(?:\s*/\s*\d{2,3})?\b",
         text,
         re.IGNORECASE
     )
@@ -148,6 +159,13 @@ def extract_features(text):
             features["resting_ecg"] = value
 
     # MAXIMUM HEART RATE
+    #
+    # IMPORTANT:
+    # This intentionally does NOT match ordinary:
+    # Heart Rate 80 bpm
+    #
+    # Only explicitly labelled Maximum Heart Rate / Max Heart Rate
+    # is accepted.
     match = re.search(
         r"\b(?:Maximum\s*Heart\s*Rate|Max\s*Heart\s*Rate)\s*[:\-]?\s*(\d+(?:\.\d+)?)",
         text,
@@ -215,7 +233,7 @@ def extract_features(text):
 
     # VENTRICULAR RATE
     match = re.search(
-        r"\bVentricular\s*(?:rate|Rate)\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*bpm",
+        r"\bVentricular\s*(?:rate)\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*bpm",
         text,
         re.IGNORECASE
     )
@@ -244,6 +262,9 @@ def extract_features(text):
         features["qrs_duration"] = float(match.group(1))
 
     # QTc INTERVAL
+    #
+    # Supports:
+    # QT/QTcF interval: 360/429 ms
     match = re.search(
         r"\bQT\s*/\s*QTcF\s*interval\s*[:\-]?\s*\d+(?:\.\d+)?\s*/\s*(\d+(?:\.\d+)?)\s*ms",
         text,

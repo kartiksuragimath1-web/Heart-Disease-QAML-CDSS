@@ -87,6 +87,23 @@ def save_prediction(
     cursor = connection.cursor()
 
     try:
+        check_query = """
+        SELECT prediction_id
+        FROM predictions
+        WHERE extraction_id = %s
+        LIMIT 1
+        """
+
+        cursor.execute(check_query, (extraction_id,))
+        existing_prediction = cursor.fetchone()
+
+        if existing_prediction:
+            print(
+                f"Prediction already exists for Extraction ID "
+                f"{extraction_id}. "
+                f"Prediction ID: {existing_prediction[0]}"
+            )
+            return True       
 
         query = """
         INSERT INTO predictions

@@ -2,11 +2,9 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>HeartQAML | Risk Assessment</title>
 
@@ -38,18 +36,10 @@
             min-height: 100vh;
         }
 
-        /* =====================================================
-           NAVBAR
-        ===================================================== */
-
         .navbar {
             height: 78px;
-
-            /* FIXED: solid background */
             background: #ffffff;
-
             backdrop-filter: blur(12px);
-
             border-bottom: 1px solid #e5eaf0;
 
             display: flex;
@@ -60,7 +50,6 @@
 
             position: sticky;
             top: 0;
-
             z-index: 100;
         }
 
@@ -71,7 +60,6 @@
 
             font-size: 24px;
             font-weight: 800;
-
             color: #116f6b;
         }
 
@@ -86,7 +74,6 @@
             justify-content: center;
 
             color: white;
-
             font-size: 21px;
 
             background:
@@ -108,11 +95,8 @@
 
         .nav-links a {
             text-decoration: none;
-
             color: #60708b;
-
             font-weight: 600;
-
             font-size: 15px;
         }
 
@@ -122,13 +106,9 @@
 
         .logout-btn {
             padding: 11px 19px;
-
             border-radius: 10px;
-
             background: #117d76;
-
             color: white !important;
-
             transition: 0.2s;
         }
 
@@ -139,15 +119,9 @@
                 0 8px 18px rgba(17,125,118,0.20);
         }
 
-
-        /* =====================================================
-           PAGE
-        ===================================================== */
-
         .page {
             width: 86%;
             max-width: 1250px;
-
             margin: 45px auto 70px;
         }
 
@@ -156,15 +130,12 @@
             align-items: center;
 
             padding: 8px 15px;
-
             border-radius: 30px;
 
             background: #dff8f4;
-
             color: #08766e;
 
             font-size: 13px;
-
             font-weight: 700;
 
             margin-bottom: 15px;
@@ -183,28 +154,19 @@
 
         .page-title {
             font-size: 42px;
-
             line-height: 1.12;
 
             margin-bottom: 10px;
 
             font-weight: 800;
-
             letter-spacing: -1px;
         }
 
         .page-subtitle {
             color: #687994;
-
             font-size: 17px;
-
             margin-bottom: 32px;
         }
-
-
-        /* =====================================================
-           MAIN RESULT
-        ===================================================== */
 
         .result-layout {
             display: grid;
@@ -227,20 +189,13 @@
                 0 18px 50px rgba(28,48,77,0.08);
         }
 
-
-        /* =====================================================
-           RISK CARD
-        ===================================================== */
-
         .risk-card {
             padding: 30px;
 
             display: flex;
-
             flex-direction: column;
 
             justify-content: center;
-
             align-items: center;
 
             text-align: center;
@@ -250,11 +205,9 @@
             color: #75839b;
 
             font-size: 13px;
-
             font-weight: 700;
 
             text-transform: uppercase;
-
             letter-spacing: 1.5px;
 
             margin-bottom: 20px;
@@ -265,10 +218,6 @@
             height: 190px;
 
             border-radius: 50%;
-
-            /* Default value.
-               JavaScript replaces this with
-               the actual model probability. */
 
             background:
                 conic-gradient(
@@ -301,11 +250,9 @@
 
         .risk-number {
             position: relative;
-
             z-index: 2;
 
             font-size: 39px;
-
             font-weight: 800;
 
             color: #17233c;
@@ -313,7 +260,6 @@
 
         .risk-percent {
             position: relative;
-
             z-index: 2;
 
             font-size: 16px;
@@ -341,11 +287,6 @@
             letter-spacing: 0.5px;
         }
 
-
-        /* =====================================================
-           INFORMATION CARD
-        ===================================================== */
-
         .info-card {
             padding: 30px;
         }
@@ -354,7 +295,6 @@
             display: flex;
 
             justify-content: space-between;
-
             align-items: flex-start;
 
             margin-bottom: 25px;
@@ -362,13 +302,11 @@
 
         .info-header h2 {
             font-size: 24px;
-
             margin-bottom: 6px;
         }
 
         .info-header p {
             color: #75839b;
-
             font-size: 14px;
         }
 
@@ -382,8 +320,17 @@
             color: #087a50;
 
             font-size: 12px;
-
             font-weight: 800;
+        }
+
+        .status-warning {
+            background: #fff4db;
+            color: #a96c00;
+        }
+
+        .status-reviewed {
+            background: #e5f7f4;
+            color: #08766e;
         }
 
         .diagnosis-box {
@@ -425,11 +372,6 @@
             color: #17233c;
         }
 
-
-        /* =====================================================
-           META
-        ===================================================== */
-
         .meta-grid {
             display: grid;
 
@@ -468,11 +410,6 @@
 
             color: #263653;
         }
-
-
-        /* =====================================================
-           FEATURES
-        ===================================================== */
 
         .section {
             margin-top: 30px;
@@ -558,11 +495,6 @@
             font-weight: 600;
         }
 
-
-        /* =====================================================
-           NOTICE
-        ===================================================== */
-
         .notice {
             margin-top: 25px;
 
@@ -589,10 +521,61 @@
             font-size: 20px;
         }
 
+        .doctor-required {
+            background: #fff8e8;
 
-        /* =====================================================
-           BUTTONS
-        ===================================================== */
+            border: 1px solid #f1dfb4;
+
+            border-radius: 18px;
+
+            padding: 25px;
+
+            margin-top: 25px;
+        }
+
+        .doctor-required h3 {
+            font-size: 20px;
+
+            margin-bottom: 10px;
+
+            color: #8b5e00;
+        }
+
+        .doctor-required p {
+            color: #6f6248;
+
+            line-height: 1.7;
+
+            font-size: 14px;
+        }
+
+        .review-completed {
+            background: #f1faf8;
+
+            border: 1px solid #d7ebe8;
+
+            border-radius: 18px;
+
+            padding: 25px;
+
+            margin-top: 25px;
+        }
+
+        .review-completed h3 {
+            font-size: 20px;
+
+            margin-bottom: 10px;
+
+            color: #08766e;
+        }
+
+        .review-completed p {
+            color: #536b6a;
+
+            line-height: 1.7;
+
+            font-size: 14px;
+        }
 
         .actions {
             display: flex;
@@ -641,11 +624,6 @@
             background: #f8fafb;
         }
 
-
-        /* =====================================================
-           FOOTER
-        ===================================================== */
-
         .footer {
             text-align: center;
 
@@ -656,10 +634,10 @@
             font-size: 12px;
         }
 
-
-        /* =====================================================
-           RESPONSIVE
-        ===================================================== */
+        .empty-value {
+            color: #9aa6b6;
+            font-weight: 600;
+        }
 
         @media (max-width: 900px) {
 
@@ -681,7 +659,6 @@
 
             .page {
                 width: 92%;
-
                 margin-top: 30px;
             }
 
@@ -718,10 +695,6 @@
 <body>
 
 
-<!-- =========================================================
-     NAVIGATION BAR
-========================================================= -->
-
 <nav class="navbar">
 
     <div class="brand">
@@ -755,10 +728,6 @@
 </nav>
 
 
-<!-- =========================================================
-     MAIN CONTENT
-========================================================= -->
-
 <main class="page">
 
 
@@ -789,15 +758,14 @@
 
 
     <!-- =====================================================
-         RESULT CARDS
+         STATE 1: AI PREDICTION AVAILABLE
     ===================================================== -->
+
+    {% if assessment_state == "AI_PREDICTION" and prediction %}
+
 
     <div class="result-layout">
 
-
-        <!-- =================================================
-             RISK SCORE
-        ================================================= -->
 
         <div class="card risk-card">
 
@@ -806,27 +774,17 @@
             </div>
 
 
-            <!--
-                IMPORTANT:
-                We use data-risk instead of putting
-                Jinja directly inside conic-gradient().
-            -->
-
             <div class="risk-circle"
                  data-risk="{{ prediction.risk_probability_percent }}">
 
                 <div>
 
                     <div class="risk-number">
-
                         {{ prediction.risk_probability_percent }}
-
                     </div>
 
                     <div class="risk-percent">
-
                         percent
-
                     </div>
 
                 </div>
@@ -842,10 +800,6 @@
 
         </div>
 
-
-        <!-- =================================================
-             RESULT INFORMATION
-        ================================================= -->
 
         <div class="card info-card">
 
@@ -877,11 +831,8 @@
             <div class="diagnosis-box">
 
                 <div class="diagnosis-title">
-
                     Assessment Result
-
                 </div>
-
 
                 <div class="diagnosis-result">
 
@@ -902,10 +853,12 @@
                     </div>
 
                     <div class="meta-value">
-                        Hybrid KNN + RF
+                        {{ prediction.model_name or "Hybrid KNN + RF" }}
                     </div>
 
                 </div>
+
+
                 <div class="meta-box">
 
                     <div class="meta-label">
@@ -926,39 +879,45 @@
                     </div>
 
                     <div class="meta-value">
-
                         {{ prediction.model_version }}
-
                     </div>
 
                 </div>
 
 
- <div class="meta-box">
+                <div class="meta-box">
 
-    <div class="meta-label">
-        Doctor Review
-    </div>
+                    <div class="meta-label">
+                        Doctor Review
+                    </div>
 
-    <div class="meta-value">
+                    <div class="meta-value">
 
-        {% if prediction.doctor_review %}
+                        {% if prediction.doctor_review %}
 
-            {% if prediction.doctor_review.review_status == 'REVIEWED' %}
-                ✅ Reviewed
-            {% else %}
-                ⏳ {{ prediction.doctor_review.review_status }}
-            {% endif %}
+                            {% if prediction.doctor_review.review_status == 'REVIEWED' %}
 
-        {% else %}
+                                ✅ Reviewed
 
-            ⏳ Pending
+                            {% elif prediction.doctor_review.review_status == 'NEEDS_FURTHER_TESTS' %}
 
-        {% endif %}
+                                ⚠ Further Tests
 
-    </div>
+                            {% else %}
 
-</div>
+                                ⏳ {{ prediction.doctor_review.review_status }}
+
+                            {% endif %}
+
+                        {% else %}
+
+                            ⏳ Pending
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
 
 
             </div>
@@ -968,19 +927,15 @@
     </div>
 
 
-    <!-- =====================================================
-         EXTRACTED CLINICAL FEATURES
-    ===================================================== -->
+    <!-- AI FEATURES -->
 
     <section class="section">
-
 
         <div class="section-header">
 
             <h2>
                 Extracted Clinical Features
             </h2>
-
 
             <div class="confidence">
 
@@ -995,31 +950,16 @@
         <div class="features-grid">
 
 
-            <!-- AGE -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Age
-                </div>
-
+                <div class="feature-name">Age</div>
                 <div class="feature-value">
-
                     {{ prediction.age }}
-
                 </div>
-
             </div>
 
 
-            <!-- SEX -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Sex
-                </div>
-
+                <div class="feature-name">Sex</div>
                 <div class="feature-value">
 
                     {% if prediction.sex == 1 %}
@@ -1029,35 +969,19 @@
                     {% endif %}
 
                 </div>
-
             </div>
 
 
-            <!-- CHEST PAIN -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Chest Pain Type
-                </div>
-
+                <div class="feature-name">Chest Pain Type</div>
                 <div class="feature-value">
-
                     {{ prediction.chest_pain_type }}
-
                 </div>
-
             </div>
 
 
-            <!-- BLOOD PRESSURE -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Resting BP
-                </div>
-
+                <div class="feature-name">Resting BP</div>
                 <div class="feature-value">
 
                     {{ prediction.resting_bp }}
@@ -1065,18 +989,11 @@
                     <small>mmHg</small>
 
                 </div>
-
             </div>
 
 
-            <!-- CHOLESTEROL -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Cholesterol
-                </div>
-
+                <div class="feature-name">Cholesterol</div>
                 <div class="feature-value">
 
                     {{ prediction.cholesterol }}
@@ -1084,52 +1001,27 @@
                     <small>mg/dL</small>
 
                 </div>
-
             </div>
 
 
-            <!-- FASTING BLOOD SUGAR -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Fasting Blood Sugar
-                </div>
-
+                <div class="feature-name">Fasting Blood Sugar</div>
                 <div class="feature-value">
-
                     {{ prediction.fasting_blood_sugar }}
-
                 </div>
-
             </div>
 
 
-            <!-- RESTING ECG -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Resting ECG
-                </div>
-
+                <div class="feature-name">Resting ECG</div>
                 <div class="feature-value">
-
                     {{ prediction.resting_ecg }}
-
                 </div>
-
             </div>
 
 
-            <!-- MAXIMUM HEART RATE -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Maximum Heart Rate
-                </div>
-
+                <div class="feature-name">Maximum Heart Rate</div>
                 <div class="feature-value">
 
                     {{ prediction.max_heart_rate }}
@@ -1137,58 +1029,30 @@
                     <small>bpm</small>
 
                 </div>
-
             </div>
 
 
-            <!-- EXERCISE ANGINA -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Exercise Angina
-                </div>
-
+                <div class="feature-name">Exercise Angina</div>
                 <div class="feature-value">
-
                     {{ prediction.exercise_angina }}
-
                 </div>
-
             </div>
 
 
-            <!-- OLDPEAK -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    Oldpeak
-                </div>
-
+                <div class="feature-name">Oldpeak</div>
                 <div class="feature-value">
-
                     {{ prediction.oldpeak }}
-
                 </div>
-
             </div>
 
 
-            <!-- ST SLOPE -->
-
             <div class="feature">
-
-                <div class="feature-name">
-                    ST Slope
-                </div>
-
+                <div class="feature-name">ST Slope</div>
                 <div class="feature-value">
-
                     {{ prediction.st_slope }}
-
                 </div>
-
             </div>
 
 
@@ -1196,9 +1060,8 @@
 
     </section>
 
-        <!-- =====================================================
-         DOCTOR CLINICAL REVIEW
-    ===================================================== -->
+
+    <!-- AI DOCTOR REVIEW -->
 
     {% if prediction.doctor_review %}
 
@@ -1220,8 +1083,6 @@
         <div class="card" style="padding:30px;">
 
 
-            <!-- DOCTOR DECISION -->
-
             <div class="diagnosis-box">
 
                 <div class="diagnosis-title">
@@ -1231,29 +1092,21 @@
                 <div class="diagnosis-result">
 
                     {% if prediction.doctor_review.doctor_decision == 'LOW_RISK' %}
-
                         Low Risk
-
                     {% elif prediction.doctor_review.doctor_decision == 'MODERATE_RISK' %}
-
                         Moderate Risk
-
                     {% elif prediction.doctor_review.doctor_decision == 'HIGH_RISK' %}
-
                         High Risk
-
                     {% elif prediction.doctor_review.doctor_decision == 'INCONCLUSIVE' %}
-
                         Inconclusive
-
+                    {% else %}
+                        Not specified
                     {% endif %}
 
                 </div>
 
             </div>
 
-
-            <!-- AI AGREEMENT -->
 
             <div class="meta-box" style="margin-bottom:15px;">
 
@@ -1282,8 +1135,6 @@
             </div>
 
 
-            <!-- DIAGNOSIS NOTES -->
-
             <div class="meta-box" style="margin-bottom:15px;">
 
                 <div class="meta-label">
@@ -1300,8 +1151,6 @@
             </div>
 
 
-            <!-- RECOMMENDATIONS -->
-
             <div class="meta-box" style="margin-bottom:15px;">
 
                 <div class="meta-label">
@@ -1317,8 +1166,6 @@
 
             </div>
 
-
-            <!-- REVIEWED TIME -->
 
             <div class="meta-box">
 
@@ -1341,6 +1188,718 @@
 
     {% endif %}
 
+
+    <!-- =====================================================
+         STATE 2 / 3: DOCTOR REVIEW REQUIRED OR COMPLETED
+    ===================================================== -->
+
+    {% elif assessment_state == "DOCTOR_REVIEW_REQUIRED"
+       or assessment_state == "DOCTOR_REVIEW_COMPLETED" %}
+
+
+    <div class="card info-card">
+
+        <div class="info-header">
+
+            <div>
+
+                <h2>
+                    Clinical Review Status
+                </h2>
+
+                <p>
+                    HeartQAML report assessment workflow
+                </p>
+
+            </div>
+
+
+            {% if assessment_state == "DOCTOR_REVIEW_COMPLETED" %}
+
+                <div class="status status-reviewed">
+                    ● REVIEWED
+                </div>
+
+            {% else %}
+
+                <div class="status status-warning">
+                    ● DOCTOR REVIEW REQUIRED
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        {% if assessment_state == "DOCTOR_REVIEW_REQUIRED" %}
+
+
+        <div class="doctor-required">
+
+            <h3>
+                🩺 Doctor Review Required
+            </h3>
+
+            <p>
+                HeartQAML could not generate an automated AI
+                risk assessment from this report because the
+                required model input features were not reliably
+                available in the extracted clinical information.
+            </p>
+
+            <br>
+
+            <p>
+                No AI risk probability or AI diagnosis has been
+                generated for this report. A qualified healthcare
+                professional should review the original medical
+                report and determine the appropriate next step.
+            </p>
+
+        </div>
+
+
+        {% else %}
+
+
+        <div class="review-completed">
+
+            <h3>
+                🩺 Doctor Clinical Review Completed
+            </h3>
+
+            <p>
+                The uploaded report was reviewed by a qualified
+                healthcare professional. An automated AI prediction
+                was not generated because the required model inputs
+                were not reliably available from the report.
+            </p>
+
+        </div>
+
+
+        {% endif %}
+
+
+        <!-- REPORT INFORMATION -->
+
+        <div class="meta-grid" style="margin-top:22px;">
+
+
+            <div class="meta-box">
+
+                <div class="meta-label">
+                    Report Type
+                </div>
+
+                <div class="meta-value">
+
+                    {{ report.report_type or "Medical Report" }}
+
+                </div>
+
+            </div>
+
+
+            <div class="meta-box">
+
+                <div class="meta-label">
+                    Processing Status
+                </div>
+
+                <div class="meta-value">
+
+                    {{ report.processing_status or "NEEDS_REVIEW" }}
+
+                </div>
+
+            </div>
+
+
+            <div class="meta-box">
+
+                <div class="meta-label">
+                    Extraction Status
+                </div>
+
+                <div class="meta-value">
+
+                    {{ extraction.validation_status or "NEEDS_REVIEW" }}
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- EXTRACTION INFORMATION -->
+
+        <section class="section">
+
+            <div class="section-header">
+
+                <h2>
+                    Extracted Clinical Information
+                </h2>
+
+
+                {% if extraction.confidence_score is not none %}
+
+                <div class="confidence">
+
+                    Extraction Confidence:
+                    {{ extraction.confidence_score }}
+
+                </div>
+
+                {% else %}
+
+                <div class="confidence">
+                    Review Required
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="features-grid">
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Age
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.age is not none %}
+                            {{ extraction.age }}
+                        {% else %}
+                            <span class="empty-value">Not extracted</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Sex
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.sex is not none %}
+
+                            {% if extraction.sex == 1 %}
+                                Male
+                            {% else %}
+                                Female
+                            {% endif %}
+
+                        {% else %}
+
+                            <span class="empty-value">
+                                Not extracted
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Chest Pain Type
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.chest_pain_type is not none %}
+                            {{ extraction.chest_pain_type }}
+                        {% else %}
+                            <span class="empty-value">Not extracted</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Resting BP
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.resting_bp is not none %}
+
+                            {{ extraction.resting_bp }}
+                            <small>mmHg</small>
+
+                        {% else %}
+
+                            <span class="empty-value">
+                                Not extracted
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Cholesterol
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.cholesterol is not none %}
+
+                            {{ extraction.cholesterol }}
+                            <small>mg/dL</small>
+
+                        {% else %}
+
+                            <span class="empty-value">
+                                Not extracted
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Fasting Blood Sugar
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.fasting_blood_sugar is not none %}
+                            {{ extraction.fasting_blood_sugar }}
+                        {% else %}
+                            <span class="empty-value">Not extracted</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Resting ECG
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.resting_ecg is not none %}
+                            {{ extraction.resting_ecg }}
+                        {% else %}
+                            <span class="empty-value">Not extracted</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Maximum Heart Rate
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.max_heart_rate is not none %}
+
+                            {{ extraction.max_heart_rate }}
+                            <small>bpm</small>
+
+                        {% else %}
+
+                            <span class="empty-value">
+                                Not extracted
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Exercise Angina
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.exercise_angina is not none %}
+                            {{ extraction.exercise_angina }}
+                        {% else %}
+                            <span class="empty-value">Not extracted</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Oldpeak
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.oldpeak is not none %}
+                            {{ extraction.oldpeak }}
+                        {% else %}
+                            <span class="empty-value">Not extracted</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        ST Slope
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.st_slope is not none %}
+                            {{ extraction.st_slope }}
+                        {% else %}
+                            <span class="empty-value">Not extracted</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- ECG-SPECIFIC INFORMATION -->
+
+                {% if extraction.ventricular_rate is not none %}
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Ventricular Rate
+                    </div>
+
+                    <div class="feature-value">
+
+                        {{ extraction.ventricular_rate }}
+                        <small>bpm</small>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                {% if extraction.pr_interval is not none %}
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        PR Interval
+                    </div>
+
+                    <div class="feature-value">
+
+                        {{ extraction.pr_interval }}
+                        <small>ms</small>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                {% if extraction.qrs_duration is not none %}
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        QRS Duration
+                    </div>
+
+                    <div class="feature-value">
+
+                        {{ extraction.qrs_duration }}
+                        <small>ms</small>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                {% if extraction.qtc_interval is not none %}
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        QTc Interval
+                    </div>
+
+                    <div class="feature-value">
+
+                        {{ extraction.qtc_interval }}
+                        <small>ms</small>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                {% if extraction.cardiac_axis is not none %}
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Cardiac Axis
+                    </div>
+
+                    <div class="feature-value">
+
+                        {{ extraction.cardiac_axis }}
+                        <small>°</small>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                {% if extraction.ecg_quality %}
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        ECG Quality
+                    </div>
+
+                    <div class="feature-value">
+
+                        {{ extraction.ecg_quality }}
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                {% if extraction.sinus_rhythm is not none %}
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        Sinus Rhythm
+                    </div>
+
+                    <div class="feature-value">
+
+                        {% if extraction.sinus_rhythm == 1 %}
+                            Yes
+                        {% else %}
+                            No
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                {% if extraction.av_conduction %}
+
+                <div class="feature">
+
+                    <div class="feature-name">
+                        AV Conduction
+                    </div>
+
+                    <div class="feature-value">
+
+                        {{ extraction.av_conduction }}
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+            </div>
+
+        </section>
+
+
+        <!-- COMPLETED REPORT REVIEW -->
+
+        {% if assessment_state == "DOCTOR_REVIEW_COMPLETED"
+              and report_review %}
+
+
+        <section class="section">
+
+            <div class="section-header">
+
+                <h2>
+                    🩺 Doctor Clinical Review
+                </h2>
+
+                <div class="confidence">
+
+                    {{ report_review.review_status }}
+
+                </div>
+
+            </div>
+
+
+            <div class="card" style="padding:30px;">
+
+
+                <div class="diagnosis-box">
+
+                    <div class="diagnosis-title">
+                        Doctor's Clinical Decision
+                    </div>
+
+                    <div class="diagnosis-result">
+
+                        {% if report_review.doctor_decision == 'LOW_RISK' %}
+
+                            Low Risk
+
+                        {% elif report_review.doctor_decision == 'MODERATE_RISK' %}
+
+                            Moderate Risk
+
+                        {% elif report_review.doctor_decision == 'HIGH_RISK' %}
+
+                            High Risk
+
+                        {% elif report_review.doctor_decision == 'INCONCLUSIVE' %}
+
+                            Inconclusive
+
+                        {% else %}
+
+                            Not specified
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="meta-box" style="margin-bottom:15px;">
+
+                    <div class="meta-label">
+                        Clinical Notes
+                    </div>
+
+                    <div class="meta-value"
+                         style="line-height:1.6;">
+
+                        {{ report_review.diagnosis_notes
+                           or "No clinical notes provided." }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="meta-box" style="margin-bottom:15px;">
+
+                    <div class="meta-label">
+                        Doctor Recommendations
+                    </div>
+
+                    <div class="meta-value"
+                         style="line-height:1.6;">
+
+                        {{ report_review.recommendations
+                           or "No recommendations provided." }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="meta-box">
+
+                    <div class="meta-label">
+                        Reviewed At
+                    </div>
+
+                    <div class="meta-value">
+
+                        {{ report_review.reviewed_at }}
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+    {% endif %}
+
+
     <!-- =====================================================
          CLINICAL NOTICE
     ===================================================== -->
@@ -1359,11 +1918,24 @@
 
             <br>
 
-            This AI-generated result is intended to support
-            clinical decision-making and is not a medical
-            diagnosis. A qualified healthcare professional
-            should review the result and the underlying
-            clinical information.
+            {% if assessment_state == "AI_PREDICTION" %}
+
+                This AI-generated result is intended to support
+                clinical decision-making and is not a medical
+                diagnosis. A qualified healthcare professional
+                should review the result and the underlying
+                clinical information.
+
+            {% else %}
+
+                No automated AI risk prediction has been generated
+                for this report because the required model inputs
+                were not reliably available. The information shown
+                above represents extracted report data and/or
+                clinical review. A qualified healthcare professional
+                should review the original medical report.
+
+            {% endif %}
 
         </div>
 
@@ -1385,6 +1957,19 @@
         </a>
 
 
+        {% if report and report.report_id %}
+
+        <a href="{{ url_for('patient_view_report',
+                             report_id=report.report_id) }}"
+           class="btn btn-secondary">
+
+            View Medical Report
+
+        </a>
+
+        {% endif %}
+
+
         <a href="{{ url_for('upload_report') }}"
            class="btn btn-secondary">
 
@@ -1396,10 +1981,6 @@
     </div>
 
 
-    <!-- =====================================================
-         FOOTER
-    ===================================================== -->
-
     <div class="footer">
 
         HeartQAML · AI-Powered Clinical Decision Support
@@ -1410,18 +1991,7 @@
 </main>
 
 
-<!-- =========================================================
-     RISK CIRCLE JAVASCRIPT
-========================================================= -->
-
 <script>
-
-    /*
-       Get the risk percentage generated by Flask/Jinja.
-       Example:
-
-       data-risk="54.5"
-    */
 
     const riskCircle =
         document.querySelector(".risk-circle");
@@ -1435,11 +2005,6 @@
             );
 
 
-        /*
-           Keep the value safely between
-           0 and 100.
-        */
-
         const safeRisk =
             Math.max(
                 0,
@@ -1449,10 +2014,6 @@
                 )
             );
 
-
-        /*
-           Create the circular progress indicator.
-        */
 
         riskCircle.style.background =
             `conic-gradient(

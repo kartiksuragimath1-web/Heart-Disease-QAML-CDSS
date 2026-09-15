@@ -173,15 +173,15 @@
 
         <nav class="sidebar-nav">
 
-            <a href="#">
-                <span>Q</span>
-                QAML Results
-            </a>
+        <a href="{{ url_for('patient_prediction_history') }}">
+            <span>Q</span>
+            QAML Results
+        </a>
 
-            <a href="#">
-                <span>◉</span>
-                Risk Insights
-            </a>
+        <a href="{{ url_for('patient_risk_insights') }}">
+            <span>◉</span>
+            Risk Insights
+        </a>
 
         </nav>
 
@@ -713,7 +713,7 @@
                             </strong>
 
                             <small>
-                                QAML module — upcoming
+                                QAML quantum-assisted analysis integrated
                             </small>
 
                         </div>
@@ -774,7 +774,7 @@
                 </div>
 
 
-                <a href="#">
+                <a href="{{ url_for('patient_prediction_history') }}">
                     View all →
                 </a>
 
