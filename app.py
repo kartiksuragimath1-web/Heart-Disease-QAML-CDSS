@@ -413,7 +413,7 @@ def doctor_login():
                     "Your doctor account is not verified by the administrator.",
                     "warning"
                 )
-                return redirect(url_for("doctor_login"))          
+                return redirect(url_for("doctor_login"))
 
             if user and check_password_hash(
                 user["password_hash"],
@@ -1680,6 +1680,7 @@ def patient_prediction_history():
         )
 
         predictions = cursor.fetchall()
+        print("PREDICTION HISTORY:", predictions)
 
         return render_template(
             "prediction_history.html",
@@ -1734,10 +1735,13 @@ def patient_doctor_reviews():
                 dr.reviewed_at,
 
                 p.prediction_id,
+                p.extraction_id,
                 p.risk_probability,
                 p.risk_level,
                 p.model_name,
                 p.model_version,
+                p.qaml_prediction,
+                p.qaml_quantum_score,
                 p.created_at,
 
                 m.report_id,
@@ -1765,6 +1769,29 @@ def patient_doctor_reviews():
 
         prediction_reviews = cursor.fetchall()
 
+        # Prepare display fields for AI reviews
+        for review in prediction_reviews:
+
+            review["display_review_status"] = review["review_status"]
+
+            if review["risk_probability"] is not None:
+                review["risk_probability_percent"] = round(
+                    float(review["risk_probability"]) * 100,
+                    2
+                )
+            else:
+                review["risk_probability_percent"] = None
+
+            if review["created_at"] is not None:
+                review["prediction_date"] = review["created_at"]
+            else:
+                review["prediction_date"] = "Not available"
+
+            review["patient_name"] = session.get(
+                "full_name",
+                "Patient"
+            )
+
 
         # ========================================================
         # REPORT-ONLY DOCTOR REVIEWS
@@ -1783,10 +1810,13 @@ def patient_doctor_reviews():
                 rdr.reviewed_at,
 
                 NULL AS prediction_id,
+                NULL AS extraction_id,
                 NULL AS risk_probability,
                 NULL AS risk_level,
                 NULL AS model_name,
                 NULL AS model_version,
+                NULL AS qaml_prediction,
+                NULL AS qaml_quantum_score,
                 NULL AS created_at,
 
                 m.report_id,
@@ -1808,6 +1838,19 @@ def patient_doctor_reviews():
 
         report_reviews = cursor.fetchall()
 
+        # Prepare display fields for report-only reviews
+        for review in report_reviews:
+
+            review["display_review_status"] = review["review_status"]
+
+            review["risk_probability_percent"] = None
+            review["prediction_date"] = review["reviewed_at"]
+
+            review["patient_name"] = session.get(
+                "full_name",
+                "Patient"
+            )
+
 
         # ========================================================
         # COMBINE BOTH REVIEW TYPES
@@ -1821,9 +1864,8 @@ def patient_doctor_reviews():
             reverse=True
         )
 
-
         return render_template(
-            "doctor_reviews.html",
+            "doctor_clinical_reviews.html",
             name=session.get("full_name"),
             reviews=reviews
         )
@@ -1848,6 +1890,7 @@ def patient_doctor_reviews():
 
         cursor.close()
         connection.close()
+
 # ============================================================
 # DOCTOR DASHBOARD
 # ============================================================
@@ -1959,6 +2002,151 @@ def doctor_predictions():
         return redirect(url_for("doctor_dashboard"))
 
     finally:
+        cursor.close()
+        connection.close()
+
+# ============================================================
+# DOCTOR QAML RESULTS
+# ============================================================
+
+@app.route("/doctor/qaml-results")
+def doctor_qaml_results():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash("Doctor profile not found.", "danger")
+            return redirect(url_for("doctor_dashboard"))
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(url_for("doctor_dashboard"))
+
+        # ====================================================
+        # GET QAML RESULTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.prediction_result,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.qaml_prediction,
+                p.qaml_quantum_score,
+                p.created_at,
+
+                e.extraction_id,
+
+                m.report_id,
+                m.report_type,
+                m.original_file_name,
+
+                u.user_id AS patient_id,
+                u.full_name AS patient_name
+
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            JOIN users u
+                ON m.patient_id = u.user_id
+
+            WHERE p.prediction_status = 'COMPLETED'
+
+            ORDER BY p.created_at DESC
+            """
+        )
+
+        qaml_results = cursor.fetchall()
+
+        # ====================================================
+        # CALCULATE DISPLAY VALUES
+        # ====================================================
+
+        for result in qaml_results:
+
+            if result["risk_probability"] is not None:
+                result["risk_probability_percent"] = round(
+                    float(result["risk_probability"]) * 100,
+                    2
+                )
+            else:
+                result["risk_probability_percent"] = 0
+
+        # ====================================================
+        # SEND DATA TO HTML
+        # ====================================================
+
+        return render_template(
+            "doctor_qaml_results.html",
+            name=session.get("full_name"),
+            qaml_results=qaml_results
+        )
+
+    except Exception as e:
+
+        print(
+            "Doctor QAML results error:",
+            e
+        )
+
+        flash(
+            "Unable to load QAML results.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("doctor_dashboard")
+        )
+
+    finally:
+
         cursor.close()
         connection.close()
 
@@ -2402,7 +2590,7 @@ def submit_report_doctor_review(report_id):
 
         doctor_id = doctor["doctor_id"]
 
- 
+
         # Verify that the medical report exists and requires review
         cursor.execute(
             """
@@ -3272,6 +3460,137 @@ def doctor_dashboard():
         cursor.close()
         connection.close()
 
+# ============================================================
+# DOCTOR PATIENTS
+# ============================================================
+
+@app.route("/doctor/patients")
+def doctor_patients():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash("Doctor profile not found.", "danger")
+            return redirect(url_for("doctor_dashboard"))
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(url_for("doctor_dashboard"))
+
+        # ====================================================
+        # GET PATIENTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                u.user_id,
+                u.full_name,
+                u.email,
+                u.phone,
+                u.created_at,
+
+                COUNT(DISTINCT m.report_id) AS total_reports,
+
+                COUNT(DISTINCT p.prediction_id) AS total_predictions,
+
+                MAX(p.created_at) AS latest_assessment
+
+            FROM users u
+
+            LEFT JOIN medical_reports m
+                ON u.user_id = m.patient_id
+
+            LEFT JOIN extracted_features e
+                ON m.report_id = e.report_id
+
+            LEFT JOIN predictions p
+                ON e.extraction_id = p.extraction_id
+                AND p.prediction_status = 'COMPLETED'
+
+            WHERE u.role = 'patient'
+
+            GROUP BY
+                u.user_id,
+                u.full_name,
+                u.email,
+                u.phone,
+                u.created_at
+
+            ORDER BY
+                u.created_at DESC
+            """
+        )
+
+        patients = cursor.fetchall()
+
+        # ====================================================
+        # SEND DATA TO HTML
+        # ====================================================
+
+        return render_template(
+            "doctor_patients.html",
+            patients=patients,
+            name=session.get("full_name")
+        )
+
+    except Exception as e:
+
+        print(
+            "Doctor patients database error:",
+            e
+        )
+
+        flash(
+            "Unable to load patients.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("doctor_dashboard")
+        )
+
+    finally:
+
+        cursor.close()
+        connection.close()
 
 # ============================================================
 # DOCTOR CASE DETAILS
@@ -3777,6 +4096,184 @@ def submit_doctor_review(prediction_id):
 
         cursor.close()
         connection.close()
+
+# ============================================================
+# DOCTOR REVIEWS
+# ============================================================
+
+@app.route("/doctor/reviews")
+def doctor_reviews():
+
+    if "user_id" not in session:
+        flash("Please login first.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "doctor":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+
+    connection = get_db_connection()
+
+    if connection is None:
+        flash("Unable to connect to database.", "danger")
+        return redirect(url_for("doctor_dashboard"))
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        # ====================================================
+        # VERIFY DOCTOR PROFILE
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                doctor_id,
+                verification_status
+            FROM doctors
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        doctor = cursor.fetchone()
+
+        if doctor is None:
+            flash("Doctor profile not found.", "danger")
+            return redirect(url_for("doctor_dashboard"))
+
+        if doctor["verification_status"] != "VERIFIED":
+            flash(
+                "Access denied. Your doctor profile is not verified.",
+                "danger"
+            )
+            return redirect(url_for("doctor_dashboard"))
+
+        doctor_id = doctor["doctor_id"]
+
+        # ====================================================
+        # GET PREDICTIONS + REVIEW STATUS
+        # ====================================================
+
+        cursor.execute(
+            """
+            SELECT
+                p.prediction_id,
+                p.prediction_result,
+                p.risk_probability,
+                p.risk_level,
+                p.model_name,
+                p.model_version,
+                p.prediction_status,
+                p.qaml_prediction,
+                p.qaml_quantum_score,
+                p.created_at AS prediction_date,
+
+                e.extraction_id,
+
+                m.report_id,
+                m.report_type,
+                m.original_file_name,
+
+                u.user_id AS patient_id,
+                u.full_name AS patient_name,
+
+                dr.review_id,
+                dr.review_status,
+                dr.doctor_decision,
+                dr.diagnosis_notes,
+                dr.recommendations,
+                dr.prediction_agreement,
+                dr.reviewed_at
+
+            FROM predictions p
+
+            JOIN extracted_features e
+                ON p.extraction_id = e.extraction_id
+
+            JOIN medical_reports m
+                ON e.report_id = m.report_id
+
+            JOIN users u
+                ON m.patient_id = u.user_id
+
+            LEFT JOIN doctor_reviews dr
+                ON p.prediction_id = dr.prediction_id
+                AND dr.doctor_id = %s
+
+            WHERE p.prediction_status = 'COMPLETED'
+
+            ORDER BY
+                CASE
+                    WHEN dr.review_status = 'REVIEWED'
+                    THEN 1
+                    ELSE 0
+                END,
+                p.created_at DESC
+            """,
+            (doctor_id,)
+        )
+
+        reviews = cursor.fetchall()
+
+        # ====================================================
+        # DISPLAY VALUES
+        # ====================================================
+
+        for review in reviews:
+
+            if review["risk_probability"] is not None:
+
+                review["risk_probability_percent"] = round(
+                    float(review["risk_probability"]) * 100,
+                    2
+                )
+
+            else:
+
+                review["risk_probability_percent"] = 0
+
+            if review["review_status"] == "REVIEWED":
+
+                review["display_review_status"] = "REVIEWED"
+
+            else:
+
+                review["display_review_status"] = "PENDING"
+
+        # ====================================================
+        # SEND DATA TO HTML
+        # ====================================================
+
+        return render_template(
+            "doctor_review_queue.html",
+            name=session.get("full_name"),
+            reviews=reviews
+        )
+
+    except Exception as e:
+
+        print(
+            "Doctor reviews error:",
+            e
+        )
+
+        flash(
+            "Unable to load clinical reviews.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("doctor_dashboard")
+        )
+
+    finally:
+
+        cursor.close()
+        connection.close()
+
 # ============================================================
 # ADMIN DASHBOARD
 # ============================================================
@@ -3924,6 +4421,9 @@ def upload_report():
     report_type = request.form.get("report_type")
 
     uploaded_file = request.files.get("report_file")
+    print("UPLOADED FILENAME:", repr(uploaded_file.filename if uploaded_file else None))
+
+
 
     if not report_type:
         flash("Please select a report type.", "danger")
@@ -3941,14 +4441,12 @@ def upload_report():
     # FILE VALIDATION
     # ========================================================
 
-    if not allowed_file(uploaded_file.filename):
+    if not uploaded_file.filename.lower().endswith(".pdf"):
         flash(
-            "Invalid file type. "
-            "Allowed: PDF, PNG, JPG, JPEG.",
+            "Invalid file type. Only PDF medical reports are supported.",
             "danger"
         )
         return redirect(request.url)
-
     # ========================================================
     # SECURE ORIGINAL FILE NAME
     # ========================================================
@@ -4627,7 +5125,7 @@ def prediction_result(extraction_id):
 
         cursor.close()
         connection.close()
-        
+
 # ============================================================
 # HEART DISEASE PREDICTION
 # Existing ML pipeline preserved

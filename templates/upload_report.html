@@ -60,6 +60,23 @@
         <header class="dashboard-topbar">
 
             <div>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}"
+                                style="
+                                    padding: 12px 16px;
+                                    margin-bottom: 20px;
+                                    border-radius: 8px;
+                                    border: 1px solid #fca5a5;
+                                    background: #fef2f2;
+                                    color: #991b1b;
+                                ">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
 
                 <h1>
                     Upload Medical Report

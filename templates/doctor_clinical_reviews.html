@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Clinical Reviews | HeartQAML Patient Portal</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #17233c;
+        }
+
+        .navbar {
+            background: #0f172a;
+            color: white;
+            padding: 16px 6%;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 21px;
+            font-weight: 800;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-right a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .logout {
+            background: #dc2626;
+            padding: 8px 14px;
+            border-radius: 7px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1250px;
+            margin: 35px auto;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 28px;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+
+            box-shadow:
+                0 4px 12px rgba(0,0,0,0.07);
+
+            border: 1px solid #e5eaf0;
+        }
+
+        .summary-card h3 {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .summary-card strong {
+            font-size: 28px;
+        }
+
+        .review-card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 20px;
+
+            border: 1px solid #e5eaf0;
+
+            box-shadow:
+                0 5px 16px rgba(0,0,0,0.06);
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            margin-bottom: 18px;
+        }
+
+        .review-header h2 {
+            font-size: 19px;
+        }
+
+        .status {
+            padding: 7px 12px;
+            border-radius: 20px;
+
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .pending {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .reviewed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid #e8edf2;
+            padding: 14px;
+            border-radius: 9px;
+        }
+
+        .label {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .value {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .risk-high {
+            color: #dc2626;
+        }
+
+        .risk-moderate {
+            color: #d97706;
+        }
+
+        .risk-low {
+            color: #16a34a;
+        }
+
+        .qaml {
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 18px;
+        }
+
+        .qaml-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #6d28d9;
+            margin-bottom: 10px;
+        }
+
+        .qaml-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .qaml-item {
+            font-size: 13px;
+        }
+
+        .qaml-item strong {
+            display: block;
+            margin-top: 4px;
+        }
+
+        .review-details {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 18px;
+        }
+
+        .review-details h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .review-details p {
+            color: #52627a;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .decision {
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .agreement-yes {
+            color: #16a34a;
+            font-weight: 800;
+        }
+
+        .agreement-no {
+            color: #dc2626;
+            font-weight: 800;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 16px;
+            border-radius: 7px;
+
+            background: #2563eb;
+            color: white;
+
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-review {
+            background: #16a34a;
+        }
+
+        .btn-review:hover {
+            background: #15803d;
+        }
+
+        .empty {
+            background: white;
+            padding: 50px;
+            text-align: center;
+            border-radius: 14px;
+            border: 1px solid #e5eaf0;
+        }
+
+        .empty h2 {
+            margin-bottom: 10px;
+        }
+
+        .empty p {
+            color: #64748b;
+        }
+
+        .notice {
+            margin-top: 25px;
+            padding: 15px;
+
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+
+            border-radius: 10px;
+
+            color: #9a3412;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 900px) {
+
+            .summary {
+                grid-template-columns: 1fr;
+            }
+
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+        }
+
+        @media (max-width: 600px) {
+
+            .navbar {
+                padding: 15px 20px;
+            }
+
+            .nav-right {
+                gap: 10px;
+            }
+
+            .container {
+                width: 94%;
+            }
+
+            .info-grid,
+            .qaml-grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- NAVBAR -->
+
+<nav class="navbar">
+
+    <div class="brand">
+        ❤️ HeartQAML — Patient Portal
+    </div>
+
+    <div class="nav-right">
+
+        <a href="{{ url_for('patient_dashboard') }}">
+            Dashboard
+        </a>
+
+        <a href="{{ url_for('logout') }}"
+           class="logout">
+            Logout
+        </a>
+
+    </div>
+
+</nav>
+
+
+<!-- MAIN -->
+
+<div class="container">
+
+
+    <a href="{{ url_for('patient_dashboard') }}"
+    class="back">
+
+        ← Back to Patient Dashboard
+
+    </a>
+
+
+    <h1>
+        🩺 Clinical Reviews
+    </h1>
+
+    <p class="subtitle">
+        View AI assessments and clinical reviews completed by your doctor.
+    </p>
+
+
+    <!-- SUMMARY -->
+
+    {% set pending_count = reviews
+        |selectattr('display_review_status', 'equalto', 'PENDING')
+        |list
+        |length
+    %}
+
+    {% set reviewed_count = reviews
+        |selectattr('display_review_status', 'equalto', 'REVIEWED')
+        |list
+        |length
+    %}
+
+
+    <div class="summary">
+
+        <div class="summary-card">
+
+            <h3>
+                Total Assessments
+            </h3>
+
+            <strong>
+                {{ reviews|length }}
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <h3>
+                Pending Reviews
+            </h3>
+
+            <strong>
+                {{ pending_count }}
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <h3>
+                Completed Reviews
+            </h3>
+
+            <strong>
+                {{ reviewed_count }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <!-- REVIEWS -->
+
+    {% if reviews %}
+
+
+        {% for review in reviews %}
+
+        <div class="review-card">
+
+
+            <!-- HEADER -->
+
+            <div class="review-header">
+
+                <h2>
+                    {% if review.review_source == "AI_PREDICTION" %}
+                        Patient Case #{{ review.prediction_id }}
+                    {% else %}
+                        Medical Report Review
+                    {% endif %}
+                </h2>
+
+
+                {% if review.display_review_status == "REVIEWED" %}
+
+                    <span class="status reviewed">
+                        ✅ REVIEWED
+                    </span>
+
+                {% else %}
+
+                    <span class="status pending">
+                        ⏳ PENDING REVIEW
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- PATIENT / REPORT -->
+
+            <div class="info-grid">
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Patient
+                    </div>
+
+                    <div class="value">
+                        {{ review.patient_name }}
+                    </div>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Report
+                    </div>
+
+                    <div class="value">
+                        {{ review.report_type }}
+                    </div>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Report ID
+                    </div>
+
+                    <div class="value">
+                        {{ review.report_id }}
+                    </div>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Prediction Date
+                    </div>
+
+                    <div class="value">
+                        {{ review.prediction_date }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- AI RESULT -->
+
+            <div class="info-grid">
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        AI Risk
+                    </div>
+
+                    <div class="value">
+
+                        {% if review.risk_level == "HIGH" %}
+
+                            <span class="risk-high">
+                                HIGH
+                            </span>
+
+                        {% elif review.risk_level == "MODERATE" %}
+
+                            <span class="risk-moderate">
+                                MODERATE
+                            </span>
+
+                        {% else %}
+
+                            <span class="risk-low">
+                                LOW
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        AI Probability
+                    </div>
+
+                    <div class="value">
+                        {% if review.risk_probability_percent is not none %}
+                            {{ review.risk_probability_percent }}%
+                        {% else %}
+                            Not Available
+                        {% endif %}
+                    </div>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Model
+                    </div>
+
+                    <div class="value">
+                        {% if review.model_name %}
+                            {{ review.model_name }}
+                        {% else %}
+                            Not Available
+                        {% endif %}
+                    </div>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Model Version
+                    </div>
+
+                    <div class="value">
+                        {% if review.model_version %}
+                            {{ review.model_version }}
+                        {% else %}
+                            Not Available
+                        {% endif %}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- QAML -->
+
+            <div class="qaml">
+
+                <div class="qaml-title">
+                    ⚛️ Quantum-Assisted Analysis
+                </div>
+
+                <div class="qaml-grid">
+
+                    <div class="qaml-item">
+
+                        QAML Prediction
+
+                        <strong>
+
+                            {% if review.qaml_prediction == 1 %}
+
+                                Risk Detected
+
+                            {% elif review.qaml_prediction == 0 %}
+
+                                No Risk Detected
+
+                            {% else %}
+
+                                Not Available
+
+                            {% endif %}
+
+                        </strong>
+
+                    </div>
+
+
+                    <div class="qaml-item">
+
+                        Quantum Score
+
+                        <strong>
+
+                            {% if review.qaml_quantum_score is not none %}
+
+                                {{ "%.8f"|format(
+                                    review.qaml_quantum_score|float
+                                ) }}
+
+                            {% else %}
+
+                                Not Available
+
+                            {% endif %}
+
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- COMPLETED REVIEW -->
+
+            {% if review.display_review_status == "REVIEWED" %}
+
+            <div class="review-details">
+
+                <h3>
+                    Doctor Decision
+                </h3>
+
+                <p class="decision">
+
+                    {% if review.doctor_decision == "LOW_RISK" %}
+                        Low Risk
+
+                    {% elif review.doctor_decision == "MODERATE_RISK" %}
+                        Moderate Risk
+
+                    {% elif review.doctor_decision == "HIGH_RISK" %}
+                        High Risk
+
+                    {% elif review.doctor_decision == "INCONCLUSIVE" %}
+                        Inconclusive
+
+                    {% else %}
+                        Not specified
+                    {% endif %}
+
+                </p>
+
+
+                <h3>
+                    Clinical Notes
+                </h3>
+
+                <p>
+                    {{ review.diagnosis_notes or "No clinical notes provided." }}
+                </p>
+
+
+                <h3>
+                    Recommendations
+                </h3>
+
+                <p>
+                    {{ review.recommendations or "No recommendations provided." }}
+                </p>
+
+
+                <h3>
+                    AI Agreement
+                </h3>
+
+                <p>
+
+                    {% if review.prediction_agreement == 1 %}
+
+                        <span class="agreement-yes">
+                            ✅ Doctor agrees with AI prediction
+                        </span>
+
+                    {% elif review.prediction_agreement == 0 %}
+
+                        <span class="agreement-no">
+                            ❌ Doctor does not agree with AI prediction
+                        </span>
+
+                    {% else %}
+
+                        Not specified
+
+                    {% endif %}
+
+                </p>
+
+
+                <h3>
+                    Reviewed At
+                </h3>
+
+                <p>
+                    {{ review.reviewed_at or "Not available" }}
+                </p>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- ACTIONS -->
+
+            <div class="actions">
+
+                {% if review.review_source == "AI_PREDICTION" %}
+
+                    <a
+                        href="{{ url_for(
+                            'prediction_result',
+                            extraction_id=review.extraction_id
+                        ) }}"
+                        class="btn btn-review"
+                    >
+                        View Review
+                    </a>
+
+                {% elif review.review_source == "REPORT_REVIEW" %}
+
+                    <a
+                        href="{{ url_for('patient_reports') }}"
+                        class="btn btn-review"
+                    >
+                        View Report
+                    </a>
+
+                {% endif %}
+
+            </div>
+
+
+        </div>
+
+        {% endfor %}
+
+
+    {% else %}
+
+
+        <div class="empty">
+
+            <h2>
+                No Clinical Reviews
+            </h2>
+
+            <p>
+                There are currently no AI assessments available for clinical review.
+            </p>
+
+        </div>
+
+
+    {% endif %}
+
+
+    <!-- CLINICAL NOTICE -->
+
+    <div class="notice">
+
+        <strong>⚠ Clinical Decision Support Notice</strong>
+
+        <br>
+
+        HeartQAML provides AI-assisted decision support.
+        The AI prediction and QAML output are not a substitute for
+        professional medical judgment. Doctors should review the complete
+        clinical information before making a clinical decision.
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>

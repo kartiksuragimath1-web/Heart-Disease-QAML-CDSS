@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Patients | HeartQAML Doctor Portal</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #0f172a;
+            color: white;
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .header a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .summary-card h3 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .summary-card strong {
+            font-size: 28px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        th {
+            background: #f1f5f9;
+            padding: 14px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .patient-name {
+            font-weight: bold;
+        }
+
+        .patient-email {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 8px 13px;
+            border-radius: 7px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        @media (max-width: 800px) {
+
+            .header {
+                padding: 18px 20px;
+            }
+
+            .container {
+                margin-top: 25px;
+            }
+
+            .summary {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <div class="brand">
+            ❤️ HeartQAML
+        </div>
+
+        <div>
+            <span>Doctor Portal</span>
+
+            <a href="{{ url_for('doctor_dashboard') }}">
+                Dashboard
+            </a>
+
+            <a href="{{ url_for('logout') }}">
+                Logout
+            </a>
+        </div>
+
+    </div>
+
+
+    <!-- MAIN -->
+
+    <div class="container">
+
+        <a href="{{ url_for('doctor_dashboard') }}" class="back">
+            ← Back to Doctor Dashboard
+        </a>
+
+        <h1>👨‍⚕️ Patient Management</h1>
+
+        <p class="subtitle">
+            View registered patients and their medical assessment activity.
+        </p>
+
+
+        <!-- SUMMARY -->
+
+        <div class="summary">
+
+            <div class="summary-card">
+
+                <h3>Total Patients</h3>
+
+                <strong>
+                    {{ patients|length }}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <h3>Patients With Reports</h3>
+
+                <strong>
+                    {{ patients|selectattr('total_reports', 'gt', 0)|list|length }}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <h3>Patients With AI Assessments</h3>
+
+                <strong>
+                    {{ patients|selectattr('total_predictions', 'gt', 0)|list|length }}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- PATIENT TABLE -->
+
+        <div class="table-container">
+
+            {% if patients %}
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>Patient</th>
+
+                        <th>Phone</th>
+
+                        <th>Reports</th>
+
+                        <th>AI Assessments</th>
+
+                        <th>Registered</th>
+
+                        <th>Status</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for patient in patients %}
+
+                    <tr>
+
+                        <td>
+
+                            <div class="patient-name">
+                                {{ patient.full_name }}
+                            </div>
+
+                            <div class="patient-email">
+                                {{ patient.email }}
+                            </div>
+
+                        </td>
+
+
+                        <td>
+                            {{ patient.phone or "Not provided" }}
+                        </td>
+
+
+                        <td>
+                            {{ patient.total_reports }}
+                        </td>
+
+
+                        <td>
+                            {{ patient.total_predictions }}
+                        </td>
+
+
+                        <td>
+                            {{ patient.created_at }}
+                        </td>
+
+
+                        <td>
+
+                            <span class="status">
+                                ACTIVE
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+            {% else %}
+
+            <div class="empty">
+
+                <h3>No Patients Found</h3>
+
+                <p>
+                    There are currently no registered patients.
+                </p>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</body>
+</html>

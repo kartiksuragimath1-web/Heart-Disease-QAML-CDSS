@@ -188,9 +188,9 @@
                     assessment history.
                 </p>
 
-                <button type="button">
+                <a href="{{ url_for('doctor_patients') }}" class="btn">
                     View Patients
-                </button>
+                </a>
             </div>
 
             <div class="module">
@@ -236,9 +236,9 @@
                     available.
                 </p>
 
-                <button type="button">
+                <a href="{{ url_for('doctor_qaml_results') }}" class="btn">
                     View QAML Results
-                </button>
+                </a>
             </div>
 
             <div class="module">
@@ -248,9 +248,9 @@
                     comments for patient assessments.
                 </p>
 
-                <button type="button">
+                <a href="{{ url_for('doctor_reviews') }}" class="btn">
                     Submit Review
-                </button>
+                </a>
             </div>
 
         </div>

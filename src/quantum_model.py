@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
@@ -129,16 +130,40 @@ def qaml_predict(features):
     from config import MODEL_DIR
 
     model_path = f"{MODEL_DIR}/qaml_vqc.pkl"
+    scaler_path = f"{MODEL_DIR}/qaml_scaler.pkl"
 
     config = joblib.load(model_path)
+    qaml_scaler = joblib.load(scaler_path)
 
     features = np.asarray(features, dtype=float)
 
     if len(features) != 11:
         raise ValueError("Exactly 11 clinical features are required.")
 
-    # The QAML model was trained using the first 4 scaled features.
-    qaml_features = features[:4]
+    # The QAML scaler was trained on all 11 clinical features.
+    qaml_columns = [
+        "age",
+        "sex",
+        "chest pain type",
+        "resting bp s",
+        "cholesterol",
+        "fasting blood sugar",
+        "resting ecg",
+        "max heart rate",
+        "exercise angina",
+        "oldpeak",
+        "ST slope"
+    ]
+
+    features_df = pd.DataFrame(
+        [features],
+        columns=qaml_columns
+    )
+
+    scaled_features = qaml_scaler.transform(features_df)[0]
+
+    # The VQC itself was trained using the first 4 scaled features.
+    qaml_features = scaled_features[:4]
 
     feature_map = config["feature_map"]
     ansatz = config["ansatz"]
