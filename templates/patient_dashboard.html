@@ -46,11 +46,23 @@
 
         .assessment-row {
             display: grid;
-            grid-template-columns: 1.2fr 1fr .8fr .8fr 1fr;
-            gap: 15px;
+            grid-template-columns: 1.5fr 1fr .8fr .9fr 1fr;
+            gap: 18px;
             align-items: center;
-            padding: 16px 0;
+
+            padding: 17px 14px;
+
             border-bottom: 1px solid #e8eef2;
+
+            transition: background 0.2s ease;
+        }
+
+        .assessment-row:not(:first-child):hover {
+            background: #f8fafc;
+        }
+
+        .assessment-row:last-child {
+            border-bottom: none;
         }
 
         .assessment-row:last-child {
@@ -60,12 +72,14 @@
         .assessment-title {
             font-weight: 700;
             color: #172b3a;
+            font-size: 13px;
         }
 
         .assessment-small {
-            font-size: 12px;
+            font-size: 11px;
             color: #71808c;
             margin-top: 4px;
+            line-height: 1.4;
         }
 
         .status-completed {
@@ -700,7 +714,7 @@
                     <div class="pipeline-line"></div>
 
 
-                    <div class="pipeline-status-item">
+                    <div class="pipeline-status-item integrated">
 
                         <div class="pipeline-status-icon">
                             Q
@@ -724,7 +738,7 @@
                     <div class="pipeline-line"></div>
 
 
-                    <div class="pipeline-status-item">
+                    <div class="pipeline-status-item review-stage">
 
                         <div class="pipeline-status-icon">
                             +
@@ -928,65 +942,56 @@
             </div>
 
 
-            <div style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                gap:20px;
-                flex-wrap:wrap;
-            ">
+<div class="latest-prediction-content">
 
-                <div>
+    <div class="latest-prediction-info">
 
-                    <div class="assessment-small">
-                        AI Prediction
-                    </div>
+        <div class="assessment-small">
+            AI Prediction
+        </div>
 
-                    <h2>
-                        {% if latest_prediction.prediction_result == 1 %}
-                            Heart Disease Risk Detected
-                        {% else %}
-                            No Heart Disease Risk Detected
-                        {% endif %}
-                    </h2>
+        <h2>
+            {% if latest_prediction.prediction_result == 1 %}
+                Heart Disease Risk Detected
+            {% else %}
+                No Heart Disease Risk Detected
+            {% endif %}
+        </h2>
 
-                    <p>
-                        Model:
-                        <strong>
-                            {{ latest_prediction.model_name }}
-                        </strong>
-                        · Version
-                        {{ latest_prediction.model_version }}
-                    </p>
+        <p class="latest-prediction-model">
+            Model:
+            <strong>
+                {{ latest_prediction.model_name }}
+            </strong>
+            <span>•</span>
+            Version
+            {{ latest_prediction.model_version }}
+        </p>
 
-                </div>
+    </div>
 
+    <div class="latest-prediction-result">
 
-                <div style="text-align:center;">
+        <div class="latest-probability">
+            {{ latest_prediction.risk_probability_percent }}%
+        </div>
 
-                    <div style="
-                        font-size:34px;
-                        font-weight:800;
-                    ">
-                        {{ latest_prediction.risk_probability_percent }}%
-                    </div>
+        <span
+            class="risk-badge
+            {% if latest_prediction.risk_level == 'HIGH' %}
+                risk-high
+            {% elif latest_prediction.risk_level == 'MODERATE' %}
+                risk-moderate
+            {% else %}
+                risk-low
+            {% endif %}"
+        >
+            {{ latest_prediction.risk_level }}
+        </span>
 
-                    <span
-                        class="risk-badge
-                        {% if latest_prediction.risk_level == 'HIGH' %}
-                            risk-high
-                        {% elif latest_prediction.risk_level == 'MODERATE' %}
-                            risk-moderate
-                        {% else %}
-                            risk-low
-                        {% endif %}"
-                    >
-                        {{ latest_prediction.risk_level }}
-                    </span>
+    </div>
 
-                </div>
-
-            </div>
+</div>
 
         </section>
 

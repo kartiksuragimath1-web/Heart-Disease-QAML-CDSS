@@ -1,77 +1,343 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Admin Registration | HeartQAML</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f8f9;
+            color: #172b3a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+        }
+
+        .register-container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .brand-name {
+            font-size: 28px;
+            font-weight: 800;
+            color: #118a80;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-subtitle {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #71808c;
+        }
+
+        .register-card {
+            background: #ffffff;
+            border: 1px solid #dfe8eb;
+            border-radius: 18px;
+            padding: 34px;
+            box-shadow: 0 12px 35px rgba(23, 43, 58, 0.08);
+        }
+
+        .card-header {
+            margin-bottom: 26px;
+        }
+
+        .card-header h1 {
+            font-size: 25px;
+            color: #172b3a;
+            margin-bottom: 8px;
+        }
+
+        .card-header p {
+            font-size: 13px;
+            color: #71808c;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 7px;
+        }
+
+        .form-group input {
+            width: 100%;
+            height: 46px;
+            padding: 0 13px;
+            border: 1px solid #d7e1e5;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #172b3a;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease,
+                        box-shadow 0.2s ease;
+        }
+
+        .form-group input::placeholder {
+            color: #a0adb5;
+        }
+
+        .form-group input:focus {
+            border-color: #118a80;
+            box-shadow: 0 0 0 3px rgba(17, 138, 128, 0.10);
+        }
+
+        .password-note {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #71808c;
+        }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-message {
+            padding: 11px 13px;
+            border-radius: 9px;
+            font-size: 12px;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .flash-success {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .flash-danger,
+        .flash-error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .flash-warning {
+            background: #fffbeb;
+            color: #a16207;
+            border: 1px solid #fde68a;
+        }
+
+        .flash-info {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        .submit-btn {
+            width: 100%;
+            height: 48px;
+            border: none;
+            border-radius: 10px;
+            background: #118a80;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease,
+                        transform 0.2s ease,
+                        box-shadow 0.2s ease;
+            margin-top: 5px;
+        }
+
+        .submit-btn:hover {
+            background: #0f766e;
+            transform: translateY(-1px);
+            box-shadow: 0 7px 18px rgba(17, 138, 128, 0.20);
+        }
+
+        .login-section {
+            text-align: center;
+            margin-top: 22px;
+            padding-top: 20px;
+            border-top: 1px solid #edf1f3;
+        }
+
+        .login-section p {
+            font-size: 13px;
+            color: #71808c;
+        }
+
+        .login-section a {
+            color: #118a80;
+            font-weight: 700;
+            text-decoration: none;
+            margin-left: 4px;
+        }
+
+        .login-section a:hover {
+            text-decoration: underline;
+        }
+
+        .security-note {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 11px;
+            color: #8a98a2;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 520px) {
+            body {
+                padding: 20px 14px;
+            }
+
+            .register-card {
+                padding: 25px 20px;
+                border-radius: 15px;
+            }
+
+            .brand-name {
+                font-size: 25px;
+            }
+
+            .card-header h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>Admin Registration</h1>
+<div class="register-container">
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            <p>{{ message }}</p>
-        {% endfor %}
-    {% endwith %}
+    <div class="brand">
+        <div class="brand-name">HeartQAML</div>
+        <div class="brand-subtitle">
+            AI-Powered Clinical Decision Support System
+        </div>
+    </div>
 
-    <form method="POST">
+    <div class="register-card">
 
-        <label>Full Name</label><br>
-        <input
-            type="text"
-            name="full_name"
-            required
-        >
+        <div class="card-header">
+            <h1>Create Admin Account</h1>
+            <p>
+                Register an administrator account to manage the
+                HeartQAML clinical decision support system.
+            </p>
+        </div>
 
-        <br><br>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-        <label>Email</label><br>
-        <input
-            type="email"
-            name="email"
-            required
-        >
+        <form method="POST">
 
-        <br><br>
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input
+                    type="text"
+                    id="full_name"
+                    name="full_name"
+                    placeholder="Enter administrator name"
+                    required
+                >
+            </div>
 
-        <label>Phone</label><br>
-        <input
-            type="text"
-            name="phone"
-        >
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Enter admin email"
+                    required
+                >
+            </div>
 
-        <br><br>
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input
+                    type="text"
+                    id="phone"
+                    name="phone"
+                    placeholder="Enter phone number"
+                >
+            </div>
 
-        <label>Password</label><br>
-        <input
-            type="password"
-            name="password"
-            required
-        >
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Create a password"
+                    required
+                >
+                <div class="password-note">
+                    Password must be at least 8 characters.
+                </div>
+            </div>
 
-        <br><br>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input
+                    type="password"
+                    id="confirm_password"
+                    name="confirm_password"
+                    placeholder="Confirm your password"
+                    required
+                >
+            </div>
 
-        <label>Confirm Password</label><br>
-        <input
-            type="password"
-            name="confirm_password"
-            required
-        >
+            <button type="submit" class="submit-btn">
+                Create Admin Account
+            </button>
 
-        <br><br>
+        </form>
 
-        <button type="submit">
-            Create Admin Account
-        </button>
+        <div class="login-section">
+            <p>
+                Already registered?
+                <a href="{{ url_for('admin_login') }}">
+                    Login
+                </a>
+            </p>
+        </div>
 
-    </form>
+    </div>
 
-    <p>
-        Already registered?
-        <a href="{{ url_for('admin_login') }}">
-            Login
-        </a>
-    </p>
+    <div class="security-note">
+        Authorized administrator access only.
+        Keep your account credentials secure.
+    </div>
+
+</div>
 
 </body>
 </html>
