@@ -67,12 +67,7 @@ UPLOAD_FOLDERS = {
     "OTHER": "uploads/other"
 }
 
-ALLOWED_EXTENSIONS = {
-    "pdf",
-    "png",
-    "jpg",
-    "jpeg"
-}
+ALLOWED_EXTENSIONS = {"pdf"}
 
 def allowed_file(filename):
     return (
@@ -482,6 +477,31 @@ def doctor_register():
             ""
         ).strip()
 
+        medical_license_number = request.form.get(
+            "medical_license_number",
+            ""
+        ).strip()
+
+        specialization = request.form.get(
+            "specialization",
+            ""
+        ).strip()
+
+        qualification = request.form.get(
+            "qualification",
+            ""
+        ).strip()
+
+        hospital_name = request.form.get(
+            "hospital_name",
+            ""
+        ).strip()
+
+        experience_years = request.form.get(
+            "experience_years",
+            ""
+        ).strip()
+
         password = request.form.get(
             "password",
             ""
@@ -492,7 +512,12 @@ def doctor_register():
             ""
         )
 
-        if not full_name or not email or not password:
+        if (
+            not full_name
+            or not email
+            or not password
+            or not medical_license_number
+        ):
 
             flash(
                 "Please fill all required fields.",
@@ -524,6 +549,30 @@ def doctor_register():
             return redirect(
                 url_for("doctor_register")
             )
+        if experience_years:
+            try:
+                experience_years_value = int(experience_years)
+
+                if experience_years_value < 0 or experience_years_value > 80:
+                    flash(
+                        "Experience must be between 0 and 80 years.",
+                        "danger"
+                    )
+                    return redirect(
+                        url_for("doctor_register")
+                    )
+
+            except ValueError:
+                flash(
+                    "Experience must be a valid number.",
+                    "danger"
+                )
+                return redirect(
+                    url_for("doctor_register")
+                )
+        else:
+            experience_years_value = None
+        
 
         connection = get_db_connection()
 
@@ -564,6 +613,28 @@ def doctor_register():
                 return redirect(
                     url_for("doctor_register")
                 )
+            cursor.execute(
+                """
+                SELECT doctor_id
+                FROM doctors
+                WHERE medical_license_number = %s
+                LIMIT 1
+                """,
+                (medical_license_number,)
+            )
+
+            existing_license = cursor.fetchone()
+
+            if existing_license:
+
+                flash(
+                    "A doctor account with this medical license number already exists.",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("doctor_register")
+                )
 
             password_hash = generate_password_hash(
                 password
@@ -588,6 +659,33 @@ def doctor_register():
                     email,
                     password_hash,
                     phone
+                )
+            )
+
+            user_id = cursor.lastrowid
+
+            cursor.execute(
+                """
+                INSERT INTO doctors
+                (
+                    user_id,
+                    specialization,
+                    medical_license_number,
+                    qualification,
+                    hospital_name,
+                    experience_years,
+                    verification_status
+                )
+                VALUES
+                (%s, %s, %s, %s, %s, %s, 'PENDING')
+                """,
+                (
+                    user_id,
+                    specialization or None,
+                    medical_license_number,
+                    qualification or None,
+                    hospital_name or None,
+                    experience_years_value
                 )
             )
 
@@ -1680,7 +1778,7 @@ def patient_prediction_history():
         )
 
         predictions = cursor.fetchall()
-        print("PREDICTION HISTORY:", predictions)
+        
 
         return render_template(
             "prediction_history.html",
@@ -1750,9 +1848,9 @@ def patient_doctor_reviews():
 
                 'AI_PREDICTION' AS review_source
 
-            FROM doctor_reviews dr
+            FROM predictions p
 
-            JOIN predictions p
+            LEFT JOIN doctor_reviews dr
                 ON dr.prediction_id = p.prediction_id
 
             JOIN extracted_features e
@@ -1762,7 +1860,7 @@ def patient_doctor_reviews():
                 ON e.report_id = m.report_id
 
             WHERE m.patient_id = %s
-              AND dr.review_status = 'REVIEWED'
+                AND p.prediction_status = 'COMPLETED'
             """,
             (session["user_id"],)
         )
@@ -1772,7 +1870,11 @@ def patient_doctor_reviews():
         # Prepare display fields for AI reviews
         for review in prediction_reviews:
 
-            review["display_review_status"] = review["review_status"]
+            review["display_review_status"] = (
+                review["review_status"]
+                if review["review_status"]
+                else "PENDING"
+            )
 
             if review["risk_probability"] is not None:
                 review["risk_probability_percent"] = round(
@@ -2325,9 +2427,10 @@ def doctor_view_report(report_id):
 
         upload_folders = {
             "ECG": "uploads/ecg",
-            "LAB": "uploads/lab",
-            "LAB_REPORT": "uploads/lab",
-            "MEDICAL_REPORT": "uploads/medical"
+            "BLOOD_TEST": "uploads/blood_reports",
+            "ECHO": "uploads/echo",
+            "STRESS_TEST": "uploads/stress_test",
+            "OTHER": "uploads/other"
         }
 
         upload_folder = upload_folders.get(
@@ -3052,7 +3155,7 @@ def verify_clinical_features(extraction_id):
         ]
 
         submitted_values = {}
-        print("FORM DATA:", request.form.to_dict())
+        
         for field in field_names:
             value = request.form.get(field, "").strip()
 
@@ -3140,9 +3243,9 @@ def verify_clinical_features(extraction_id):
 
         connection.commit()
 
-        print("FEATURE VERIFICATION COMMITTED")
-        print("PATIENT ID:", extraction["patient_id"])
-        print("EXTRACTION ID:", extraction_id)
+        
+        
+        
 
         # ============================================================
         # RUN AI PREDICTION AFTER SUCCESSFUL FEATURE VERIFICATION
@@ -3760,7 +3863,7 @@ def doctor_case_details(prediction_id):
 
         doctor_review = cursor.fetchone()
 
-        print("DOCTOR CASE REVIEW:", doctor_review)
+        
 
         # ====================================================
         # CALCULATE DISPLAY VALUES
@@ -4421,7 +4524,7 @@ def upload_report():
     report_type = request.form.get("report_type")
 
     uploaded_file = request.files.get("report_file")
-    print("UPLOADED FILENAME:", repr(uploaded_file.filename if uploaded_file else None))
+    
 
 
 
@@ -4437,11 +4540,23 @@ def upload_report():
         flash("Please select a file.", "danger")
         return redirect(request.url)
 
+    # Validate actual PDF file signature
+    uploaded_file.stream.seek(0)
+    file_signature = uploaded_file.stream.read(5)
+    uploaded_file.stream.seek(0)
+
+    if file_signature != b"%PDF-":
+        flash(
+            "Invalid PDF file. Please upload a valid PDF medical report.",
+            "danger"
+        )
+        return redirect(request.url)
+
     # ========================================================
     # FILE VALIDATION
     # ========================================================
 
-    if not uploaded_file.filename.lower().endswith(".pdf"):
+    if not allowed_file(uploaded_file.filename):
         flash(
             "Invalid file type. Only PDF medical reports are supported.",
             "danger"
@@ -4782,42 +4897,7 @@ def upload_report():
                 url_for("patient_dashboard")
             )
 
-    else:
 
-        # ----------------------------------------------------
-        # Images are stored for the OCR module.
-        # OCR will be connected in the next stage.
-        # ----------------------------------------------------
-
-        connection = get_db_connection()
-
-        if connection:
-
-            cursor = connection.cursor()
-
-            cursor.execute(
-                """
-                UPDATE medical_reports
-                SET processing_status = 'UPLOADED'
-                WHERE report_id = %s
-                """,
-                (report_id,)
-            )
-
-            connection.commit()
-
-            cursor.close()
-            connection.close()
-
-        flash(
-            "Report uploaded successfully. "
-            "Image processing will be performed by the OCR module.",
-            "success"
-        )
-
-        return redirect(
-            url_for("patient_dashboard")
-        )
 
     return redirect(
         url_for("patient_dashboard")

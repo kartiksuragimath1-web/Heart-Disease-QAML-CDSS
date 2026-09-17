@@ -1,77 +1,812 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Doctor Registration | Heart CDSS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Doctor Registration | HeartQAML</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f4f8fb;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        /* ==============================
+           HEADER
+        ============================== */
+
+        .topbar {
+            height: 72px;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6%;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #0f172a;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: #0f766e;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            font-weight: 700;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 750;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .portal-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        /* ==============================
+           MAIN
+        ============================== */
+
+        .page-wrapper {
+            width: 100%;
+            max-width: 1050px;
+            margin: 42px auto;
+            padding: 0 20px;
+        }
+
+        .page-heading {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .doctor-badge {
+            width: 58px;
+            height: 58px;
+            margin: 0 auto 14px;
+            border-radius: 16px;
+            background: #ccfbf1;
+            color: #0f766e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 27px;
+            font-weight: 700;
+        }
+
+        .page-heading h1 {
+            font-size: 32px;
+            line-height: 1.2;
+            color: #0f172a;
+            margin-bottom: 8px;
+            letter-spacing: -0.7px;
+        }
+
+        .page-heading p {
+            font-size: 15px;
+            color: #64748b;
+            max-width: 620px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ==============================
+           CARD
+        ============================== */
+
+        .registration-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            box-shadow: 0 12px 35px rgba(15, 23, 42, 0.07);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #fbfdfe;
+        }
+
+        .card-header h2 {
+            font-size: 18px;
+            color: #0f172a;
+            margin-bottom: 5px;
+        }
+
+        .card-header p {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .form-content {
+            padding: 32px;
+        }
+
+        /* ==============================
+           ALERTS
+        ============================== */
+
+        .alert {
+            margin-bottom: 24px;
+            padding: 13px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 1px solid transparent;
+        }
+
+        .alert-danger {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: #fecaca;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            color: #92400e;
+            border-color: #fde68a;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            color: #1e40af;
+            border-color: #bfdbfe;
+        }
+
+        /* ==============================
+           FORM
+        ============================== */
+
+        .form-section {
+            margin-bottom: 28px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 650;
+            color: #334155;
+            margin-bottom: 7px;
+        }
+
+        .required {
+            color: #dc2626;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-control {
+            width: 100%;
+            height: 46px;
+            padding: 0 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            background: #ffffff;
+            color: #0f172a;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease,
+                        box-shadow 0.2s ease,
+                        background 0.2s ease;
+        }
+
+        .form-control::placeholder {
+            color: #94a3b8;
+        }
+
+        .form-control:hover {
+            border-color: #94a3b8;
+        }
+
+        .form-control:focus {
+            border-color: #0f766e;
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+        }
+
+        .form-control[type="number"] {
+            appearance: auto;
+        }
+
+        .field-help {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 6px;
+        }
+
+        .license-box {
+            background: #f0fdfa;
+            border: 1px solid #99f6e4;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+
+        .license-box strong {
+            display: block;
+            color: #115e59;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .license-box span {
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        /* ==============================
+           BUTTON
+        ============================== */
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .login-link {
+            font-size: 13px;
+            color: #64748b;
+            text-decoration: none;
+        }
+
+        .login-link:hover {
+            color: #0f766e;
+        }
+
+        .submit-btn {
+            height: 46px;
+            padding: 0 25px;
+            border: none;
+            border-radius: 9px;
+            background: #0f766e;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease,
+                        transform 0.15s ease,
+                        box-shadow 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            background: #115e59;
+            box-shadow: 0 6px 16px rgba(15, 118, 110, 0.2);
+        }
+
+        .submit-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* ==============================
+           FOOTER
+        ============================== */
+
+        .security-note {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* ==============================
+           RESPONSIVE
+        ============================== */
+
+        @media (max-width: 700px) {
+
+            .topbar {
+                padding: 0 20px;
+            }
+
+            .portal-label {
+                display: none;
+            }
+
+            .page-wrapper {
+                margin: 25px auto;
+                padding: 0 14px;
+            }
+
+            .page-heading h1 {
+                font-size: 26px;
+            }
+
+            .registration-card {
+                border-radius: 15px;
+            }
+
+            .card-header,
+            .form-content {
+                padding: 22px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 17px;
+            }
+
+            .form-group.full-width {
+                grid-column: auto;
+            }
+
+            .form-actions {
+                flex-direction: column-reverse;
+                align-items: stretch;
+            }
+
+            .submit-btn {
+                width: 100%;
+            }
+
+            .login-link {
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>Doctor Registration</h1>
+    <!-- ==============================
+         HEADER
+    ============================== -->
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            <p>{{ message }}</p>
-        {% endfor %}
-    {% endwith %}
+    <header class="topbar">
 
-    <form method="POST">
+        <a href="{{ url_for('doctor_login') }}" class="brand">
 
-        <label>Full Name</label><br>
-        <input
-            type="text"
-            name="full_name"
-            required
-        >
+            <div class="brand-icon">
+                ♥
+            </div>
 
-        <br><br>
+            <div class="brand-text">
+                <span class="brand-name">HeartQAML</span>
+                <span class="brand-subtitle">
+                    Clinical Decision Support System
+                </span>
+            </div>
 
-        <label>Email</label><br>
-        <input
-            type="email"
-            name="email"
-            required
-        >
-
-        <br><br>
-
-        <label>Phone</label><br>
-        <input
-            type="text"
-            name="phone"
-        >
-
-        <br><br>
-
-        <label>Password</label><br>
-        <input
-            type="password"
-            name="password"
-            required
-        >
-
-        <br><br>
-
-        <label>Confirm Password</label><br>
-        <input
-            type="password"
-            name="confirm_password"
-            required
-        >
-
-        <br><br>
-
-        <button type="submit">
-            Create Doctor Account
-        </button>
-
-    </form>
-
-    <p>
-        Already registered?
-        <a href="{{ url_for('doctor_login') }}">
-            Login
         </a>
-    </p>
+
+        <span class="portal-label">
+            Doctor Portal
+        </span>
+
+    </header>
+
+
+    <!-- ==============================
+         MAIN CONTENT
+    ============================== -->
+
+    <main class="page-wrapper">
+
+        <div class="page-heading">
+
+            <div class="doctor-badge">
+                +
+            </div>
+
+            <h1>Doctor Registration</h1>
+
+            <p>
+                Create your professional account to access the
+                HeartQAML Clinical Decision Support System.
+            </p>
+
+        </div>
+
+
+        <!-- ==============================
+             REGISTRATION CARD
+        ============================== -->
+
+        <section class="registration-card">
+
+            <div class="card-header">
+
+                <h2>Professional Information</h2>
+
+                <p>
+                    Enter your details accurately for account verification.
+                </p>
+
+            </div>
+
+
+            <div class="form-content">
+
+                <!-- ==============================
+                     FLASH MESSAGES
+                ============================== -->
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+
+                    {% if messages %}
+
+                        {% for category, message in messages %}
+
+                            <div class="alert alert-{{ category }}">
+                                {{ message }}
+                            </div>
+
+                        {% endfor %}
+
+                    {% endif %}
+
+                {% endwith %}
+
+
+                <form method="POST">
+
+                    <!-- ==============================
+                         PERSONAL INFORMATION
+                    ============================== -->
+
+                    <div class="form-section">
+
+                        <div class="section-title">
+                            Personal Information
+                        </div>
+
+                        <div class="form-grid">
+
+                            <div class="form-group">
+
+                                <label for="full_name">
+                                    Full Name
+                                    <span class="required">*</span>
+                                </label>
+
+                                <input
+                                    id="full_name"
+                                    class="form-control"
+                                    type="text"
+                                    name="full_name"
+                                    placeholder="Enter your full name"
+                                    autocomplete="name"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="email">
+                                    Email Address
+                                    <span class="required">*</span>
+                                </label>
+
+                                <input
+                                    id="email"
+                                    class="form-control"
+                                    type="email"
+                                    name="email"
+                                    placeholder="doctor@example.com"
+                                    autocomplete="email"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="phone">
+                                    Phone Number
+                                </label>
+
+                                <input
+                                    id="phone"
+                                    class="form-control"
+                                    type="tel"
+                                    name="phone"
+                                    placeholder="Enter phone number"
+                                    autocomplete="tel"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ==============================
+                         PROFESSIONAL INFORMATION
+                    ============================== -->
+
+                    <div class="form-section">
+
+                        <div class="section-title">
+                            Professional Information
+                        </div>
+
+
+                        <div class="license-box">
+
+                            <strong>
+                                Medical License Verification
+                            </strong>
+
+                            <span>
+                                Your medical license number is required
+                                for professional account verification.
+                            </span>
+
+                        </div>
+
+
+                        <div class="form-grid">
+
+                            <div class="form-group">
+
+                                <label for="medical_license_number">
+                                    Medical License Number
+                                    <span class="required">*</span>
+                                </label>
+
+                                <input
+                                    id="medical_license_number"
+                                    class="form-control"
+                                    type="text"
+                                    name="medical_license_number"
+                                    placeholder="Enter medical license number"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="specialization">
+                                    Specialization
+                                </label>
+
+                                <input
+                                    id="specialization"
+                                    class="form-control"
+                                    type="text"
+                                    name="specialization"
+                                    placeholder="e.g. Cardiology"
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="qualification">
+                                    Qualification
+                                </label>
+
+                                <input
+                                    id="qualification"
+                                    class="form-control"
+                                    type="text"
+                                    name="qualification"
+                                    placeholder="e.g. MBBS, MD"
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="hospital_name">
+                                    Hospital / Institution
+                                </label>
+
+                                <input
+                                    id="hospital_name"
+                                    class="form-control"
+                                    type="text"
+                                    name="hospital_name"
+                                    placeholder="Enter hospital name"
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="experience_years">
+                                    Experience
+                                </label>
+
+                                <input
+                                    id="experience_years"
+                                    class="form-control"
+                                    type="number"
+                                    name="experience_years"
+                                    min="0"
+                                    max="80"
+                                    placeholder="Years of experience"
+                                >
+
+                                <span class="field-help">
+                                    Enter a value between 0 and 80 years.
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ==============================
+                         ACCOUNT SECURITY
+                    ============================== -->
+
+                    <div class="form-section">
+
+                        <div class="section-title">
+                            Account Security
+                        </div>
+
+                        <div class="form-grid">
+
+                            <div class="form-group">
+
+                                <label for="password">
+                                    Password
+                                    <span class="required">*</span>
+                                </label>
+
+                                <input
+                                    id="password"
+                                    class="form-control"
+                                    type="password"
+                                    name="password"
+                                    placeholder="Create a password"
+                                    autocomplete="new-password"
+                                    minlength="6"
+                                    required
+                                >
+
+                                <span class="field-help">
+                                    Minimum 6 characters.
+                                </span>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="confirm_password">
+                                    Confirm Password
+                                    <span class="required">*</span>
+                                </label>
+
+                                <input
+                                    id="confirm_password"
+                                    class="form-control"
+                                    type="password"
+                                    name="confirm_password"
+                                    placeholder="Re-enter your password"
+                                    autocomplete="new-password"
+                                    minlength="6"
+                                    required
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ==============================
+                         ACTIONS
+                    ============================== -->
+
+                    <div class="form-actions">
+
+                        <a
+                            href="{{ url_for('doctor_login') }}"
+                            class="login-link"
+                        >
+                            Already registered? Login
+                        </a>
+
+                        <button
+                            type="submit"
+                            class="submit-btn"
+                        >
+                            Create Doctor Account
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        <div class="security-note">
+            HeartQAML protects account information and requires
+            professional verification before doctor access is approved.
+        </div>
+
+    </main>
 
 </body>
 </html>

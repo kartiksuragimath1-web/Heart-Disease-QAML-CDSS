@@ -1,22 +1,8 @@
-from auth import register_patient, authenticate_user
+from auth import authenticate_user
 
 
 print("=" * 50)
-print("PATIENT REGISTRATION TEST")
-print("=" * 50)
-
-success, message = register_patient(
-    full_name="Test Patient",
-    email="testpatient@example.com",
-    password="Test@12345",
-    phone="9999999999"
-)
-
-print(message)
-
-
-print("\n" + "=" * 50)
-print("LOGIN TEST")
+print("PATIENT LOGIN TEST")
 print("=" * 50)
 
 user = authenticate_user(
