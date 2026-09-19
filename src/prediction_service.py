@@ -216,11 +216,26 @@ def predict_from_extraction(
     # Make prediction using existing trained model
     # --------------------------------------------------------
 
-    prediction, probability = predict_heart_disease(
-        patient_data
-    )
-    qaml_prediction, quantum_score = qaml_predict(
-        [
+    try:
+        print("\n===== CLASSICAL MODEL START =====")
+        print("Patient data:", patient_data)
+
+        prediction, probability = predict_heart_disease(
+            patient_data
+        )
+
+        print("Classical prediction:", prediction)
+        print("Classical probability:", probability)
+
+    except Exception as e:
+        print("CLASSICAL MODEL ERROR:", repr(e))
+        raise
+
+
+    try:
+        print("\n===== QAML MODEL START =====")
+
+        qaml_features = [
             extraction["age"],
             extraction["sex"],
             extraction["chest_pain_type"],
@@ -233,7 +248,19 @@ def predict_from_extraction(
             extraction["oldpeak"],
             extraction["st_slope"]
         ]
-    )
+
+        print("QAML features:", qaml_features)
+
+        qaml_prediction, quantum_score = qaml_predict(
+            qaml_features
+        )
+
+        print("QAML prediction:", qaml_prediction)
+        print("Quantum score:", quantum_score)
+
+    except Exception as e:
+        print("QAML MODEL ERROR:", repr(e))
+        raise
 
     print("\n===== AI PREDICTION =====")
 
