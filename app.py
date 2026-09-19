@@ -308,6 +308,22 @@ def patient_register():
                 )
             )
 
+            # Get the newly created user ID
+            user_id = cursor.lastrowid
+
+            # Create the corresponding patient profile
+            cursor.execute(
+                """
+                INSERT INTO patients
+                (
+                    user_id
+                )
+                VALUES
+                (%s)
+                """,
+                (user_id,)
+            )
+
             connection.commit()
 
             flash(
