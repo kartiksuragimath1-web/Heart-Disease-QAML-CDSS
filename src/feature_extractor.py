@@ -55,8 +55,12 @@ def extract_features(text):
     # ============================================================
 
     # AGE
+
+    # Standard labelled format:
+    # Age: 55
+    # Age 55 Years
     match = re.search(
-        r"\bAge\s*[:\-]?\s*(\d{2,3})\b",
+        r"\bAge\s*[:\-]?\s*(\d{1,3})\s*(?:Years?|Yrs?)?\b",
         text,
         re.IGNORECASE
     )
@@ -67,7 +71,26 @@ def extract_features(text):
         if 1 <= age <= 120:
             features["age"] = age
 
+    # OCR fallback:
+    # Example: 55Years / Male
+    if features["age"] is None:
+        match = re.search(
+            r"\b(\d{1,3})\s*Years?\s*/\s*(?:Male|Female)\b",
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+            age = int(match.group(1))
+
+            if 1 <= age <= 120:
+                features["age"] = age
+
     # SEX / GENDER
+
+    # Standard labelled format:
+    # Sex: Male
+    # Gender: Female
     match = re.search(
         r"\b(?:Sex|Gender)\s*[:\-]?\s*(Male|Female)\b",
         text,
@@ -79,8 +102,27 @@ def extract_features(text):
 
         if value == "male":
             features["sex"] = 1
+
         elif value == "female":
             features["sex"] = 0
+
+    # OCR fallback:
+    # Example: 55Years / Male
+    if features["sex"] is None:
+        match = re.search(
+            r"\b\d{1,3}\s*Years?\s*/\s*(Male|Female)\b",
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+            value = match.group(1).lower()
+
+            if value == "male":
+                features["sex"] = 1
+
+            elif value == "female":
+                features["sex"] = 0
 
     # CHEST PAIN TYPE
     match = re.search(
@@ -108,7 +150,8 @@ def extract_features(text):
     # If systolic/diastolic is present, only the explicitly
     # labelled systolic value is used for resting_bp.
     match = re.search(
-        r"\b(?:Resting\s*)?(?:Blood\s*Pressure|BP)\s*[:\-]?\s*(\d{2,3})(?:\s*/\s*\d{2,3})?\b",
+        r"\b(?:Resting\s*)?(?:Blood\s*Pressure|BP)\s*[:\-]?\s*"
+        r"(\d{2,3})(?:\s*/\s*\d{2,3})?\b",
         text,
         re.IGNORECASE
     )
@@ -167,7 +210,8 @@ def extract_features(text):
     # Only explicitly labelled Maximum Heart Rate / Max Heart Rate
     # is accepted.
     match = re.search(
-        r"\b(?:Maximum\s*Heart\s*Rate|Max\s*Heart\s*Rate)\s*[:\-]?\s*(\d+(?:\.\d+)?)",
+        r"\b(?:Maximum\s*Heart\s*Rate|Max\s*Heart\s*Rate)\s*"
+        r"[:\-]?\s*(\d+(?:\.\d+)?)",
         text,
         re.IGNORECASE
     )
@@ -232,8 +276,12 @@ def extract_features(text):
         features["ecg_quality"] = match.group(1).strip()
 
     # VENTRICULAR RATE
+
+    # Standard format:
+    # Ventricular rate: 69 bpm
     match = re.search(
-        r"\bVentricular\s*(?:rate)\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*bpm",
+        r"\bVentricular\s+rate\s*[:\-]?\s*"
+        r"(\d+(?:\.\d+)?)\s*bpm\b",
         text,
         re.IGNORECASE
     )
@@ -241,9 +289,26 @@ def extract_features(text):
     if match:
         features["ventricular_rate"] = float(match.group(1))
 
+    # OCR fallback:
+    # Example: Heart Rate 69 bpm
+    if features["ventricular_rate"] is None:
+        match = re.search(
+            r"\bHeart\s+Rate\s+(\d+(?:\.\d+)?)\s*b(?:pm|om)\b",
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+            features["ventricular_rate"] = float(match.group(1))
+
     # PR INTERVAL / PR DURATION
+
+    # Standard format:
+    # PR Interval: 168 ms
+    # PR Duration: 168 ms
     match = re.search(
-        r"\bPR\s*(?:interval|duration)\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*ms",
+        r"\bPR\s*(?:interval|duration)\s*[:\-]?\s*"
+        r"(\d+(?:\.\d+)?)\s*ms\b",
         text,
         re.IGNORECASE
     )
@@ -251,9 +316,24 @@ def extract_features(text):
     if match:
         features["pr_interval"] = float(match.group(1))
 
+    # OCR fallback:
+    # Example:
+    # ST Dur/PR Int -116 / 168 ms
+    if features["pr_interval"] is None:
+        match = re.search(
+            r"\bPR\s+Int\b.*?/\s*"
+            r"(\d+(?:\.\d+)?)\s*ms\b",
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+            features["pr_interval"] = float(match.group(1))
+
     # QRS DURATION
     match = re.search(
-        r"\bQRS\s*duration\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*ms",
+        r"\bQRS\s*duration\s*[:\-]?\s*"
+        r"(\d+(?:\.\d+)?)\s*ms",
         text,
         re.IGNORECASE
     )
@@ -262,11 +342,13 @@ def extract_features(text):
         features["qrs_duration"] = float(match.group(1))
 
     # QTc INTERVAL
-    #
-    # Supports:
-    # QT/QTcF interval: 360/429 ms
+
+    # Standard format:
+    # QT/QTcF interval: 378/394 ms
     match = re.search(
-        r"\bQT\s*/\s*QTcF\s*interval\s*[:\-]?\s*\d+(?:\.\d+)?\s*/\s*(\d+(?:\.\d+)?)\s*ms",
+        r"\bQT\s*/\s*QTcF\s*interval\s*[:\-]?\s*"
+        r"\d+(?:\.\d+)?\s*/\s*"
+        r"(\d+(?:\.\d+)?)\s*ms\b",
         text,
         re.IGNORECASE
     )
@@ -274,9 +356,28 @@ def extract_features(text):
     if match:
         features["qtc_interval"] = float(match.group(1))
 
+    # OCR fallback:
+    # Example:
+    # Q-T/Qic Hodges ... 378 ... 394 ms
+    if features["qtc_interval"] is None:
+        match = re.search(
+            r"\bQ[-\s]?T\s*/\s*Q(?:Tc|ic)\b.*?"
+            r"\d+(?:\.\d+)?\D+"
+            r"(\d+(?:\.\d+)?)\s*ms\b",
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+            features["qtc_interval"] = float(match.group(1))
+
     # CARDIAC AXIS
+
+    # Standard format:
+    # QRS axis: 26 deg
     match = re.search(
-        r"\bQRS\s*axis\s*[:\-]?\s*(-?\d+(?:\.\d+)?)\s*°?",
+        r"\bQRS\s+axis\s*[:\-]?\s*"
+        r"(-?\d+(?:\.\d+)?)\s*°?",
         text,
         re.IGNORECASE
     )
@@ -284,9 +385,29 @@ def extract_features(text):
     if match:
         features["cardiac_axis"] = float(match.group(1))
 
+    # OCR fallback:
+    # Example:
+    # PLQRSIT Axis 49/26/36 deg.
+    if features["cardiac_axis"] is None:
+        match = re.search(
+            r"\bP?L?QRSIT\s+Axis\s+"
+            r"(-?\d+(?:\.\d+)?)\s*/\s*"
+            r"(-?\d+(?:\.\d+)?)\s*/\s*"
+            r"(-?\d+(?:\.\d+)?)\s*deg",
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+            features["cardiac_axis"] = float(match.group(2))
+
     # SINUS RHYTHM
+
+    # Standard format:
+    # Sinus Rhythm: Yes
+    # Sinus Rhythm: No
     match = re.search(
-        r"\b(?:Is\s*)?Sinus\s*Rhythm\s*(?:Present)?\s*[:\-]?\s*(Yes|No)",
+        r"\bSinus\s+Rhythm\b\s*[:\-]?\s*(Yes|No)\b",
         text,
         re.IGNORECASE
     )
@@ -295,6 +416,19 @@ def extract_features(text):
         features["sinus_rhythm"] = (
             match.group(1).lower() == "yes"
         )
+
+    # OCR fallback:
+    # Example:
+    # Heart Rate 69 bpm HRV 16 ms Sinus rhythm
+    if features["sinus_rhythm"] is None:
+        match = re.search(
+            r"\bSinus\s+Rhythm\b",
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+            features["sinus_rhythm"] = True
 
     # AV CONDUCTION
     match = re.search(

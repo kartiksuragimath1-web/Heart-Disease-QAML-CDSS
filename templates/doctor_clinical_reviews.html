@@ -570,25 +570,31 @@
 
                     <div class="value">
 
-                        {% if review.risk_level == "HIGH" %}
+                    {% if review.risk_level == "HIGH" %}
 
-                            <span class="risk-high">
-                                HIGH
-                            </span>
+                        <span class="risk-high">
+                            HIGH
+                        </span>
 
-                        {% elif review.risk_level == "MODERATE" %}
+                    {% elif review.risk_level == "MODERATE" %}
 
-                            <span class="risk-moderate">
-                                MODERATE
-                            </span>
+                        <span class="risk-moderate">
+                            MODERATE
+                        </span>
 
-                        {% else %}
+                    {% elif review.risk_level == "LOW" %}
 
-                            <span class="risk-low">
-                                LOW
-                            </span>
+                        <span class="risk-low">
+                            LOW
+                        </span>
 
-                        {% endif %}
+                    {% else %}
+
+                        <span>
+                            Not Available
+                        </span>
+
+                    {% endif %}
 
                     </div>
 

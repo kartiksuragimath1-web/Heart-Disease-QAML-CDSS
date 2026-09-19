@@ -1961,8 +1961,24 @@ def patient_doctor_reviews():
         reviews = prediction_reviews + report_reviews
 
         # Latest reviews first
+        from datetime import datetime
+
+        def review_sort_key(review):
+            value = review.get("reviewed_at")
+
+            if value is None:
+                return datetime.min
+
+            if isinstance(value, datetime):
+                return value
+
+            try:
+                return datetime.fromisoformat(str(value))
+            except (ValueError, TypeError):
+                return datetime.min
+
         reviews.sort(
-            key=lambda review: review["reviewed_at"] or "",
+            key=review_sort_key,
             reverse=True
         )
 
@@ -4304,7 +4320,6 @@ def doctor_reviews():
 
             LEFT JOIN doctor_reviews dr
                 ON p.prediction_id = dr.prediction_id
-                AND dr.doctor_id = %s
 
             WHERE p.prediction_status = 'COMPLETED'
 
@@ -4316,7 +4331,7 @@ def doctor_reviews():
                 END,
                 p.created_at DESC
             """,
-            (doctor_id,)
+            ()
         )
 
         reviews = cursor.fetchall()

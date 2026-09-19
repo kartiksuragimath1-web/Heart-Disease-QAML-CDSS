@@ -9,3 +9,6 @@ qiskit
 pdfplumber
 mysql-connector-python
 python-dotenv
+pytesseract
+pdf2image
+Pillow

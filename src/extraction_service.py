@@ -82,7 +82,7 @@ def save_extracted_features(report_id, pdf_path):
     # Extract text and features
     # --------------------------------------------------------
 
-    text, features = process_pdf(pdf_path)
+    text, features, extraction_method = process_pdf(pdf_path)
 
     if not text or not features:
         print("Feature extraction failed.")
@@ -199,7 +199,7 @@ def save_extracted_features(report_id, pdf_path):
             features.get("oldpeak"),
             features.get("st_slope"),
 
-            "PDF_TEXT",
+            extraction_method,
             validation_status,
             round(confidence, 4),
             0,
