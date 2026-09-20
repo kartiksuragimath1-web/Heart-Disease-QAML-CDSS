@@ -5,7 +5,7 @@ scikit-learn==1.7.2
 matplotlib
 jupyter
 joblib
-qiskit
+qiskit==1.2.4
 pdfplumber
 mysql-connector-python
 python-dotenv
