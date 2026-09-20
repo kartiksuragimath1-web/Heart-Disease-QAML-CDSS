@@ -1147,8 +1147,6 @@ def patient_dashboard():
         flash("Access denied.", "danger")
         return redirect(url_for("home"))
 
-    patient_id = session["user_id"]
-
     # ========================================================
     # DATABASE CONNECTION
     # ========================================================
@@ -1169,6 +1167,24 @@ def patient_dashboard():
         )
 
     cursor = connection.cursor(dictionary=True)
+    cursor.execute(
+    """
+    SELECT patient_id
+    FROM patients
+    WHERE user_id = %s
+    LIMIT 1
+    """,
+    (session["user_id"],)
+)
+
+    patient = cursor.fetchone()
+
+    if not patient:
+        flash("Patient profile not found.", "danger")
+        return redirect(url_for("login"))
+
+    patient_id = patient["patient_id"]
+    
 
     try:
 
@@ -1436,7 +1452,12 @@ def patient_reports():
                 processing_status,
                 uploaded_at
             FROM medical_reports
-            WHERE patient_id = %s
+            WHERE patient_id = (
+                SELECT patient_id
+                FROM patients
+                WHERE user_id = %s
+                LIMIT 1
+            )
             ORDER BY uploaded_at DESC
             """,
             (session["user_id"],)
@@ -1498,7 +1519,12 @@ def patient_view_report(report_id):
                 original_file_name
             FROM medical_reports
             WHERE report_id = %s
-              AND patient_id = %s
+            AND patient_id = (
+                SELECT patient_id
+                FROM patients
+                WHERE user_id = %s
+                LIMIT 1
+            )
             """,
             (report_id, session["user_id"])
         )
@@ -1550,7 +1576,7 @@ def patient_risk_insights():
         flash("Access denied.", "danger")
         return redirect(url_for("home"))
 
-    patient_id = session["user_id"]
+    patient_id = None
 
     connection = get_db_connection()
 
@@ -1565,6 +1591,27 @@ def patient_risk_insights():
             moderate_risk_count=0,
             high_risk_count=0
         )
+
+    patient_cursor = connection.cursor()
+    patient_cursor.execute(
+        """
+        SELECT patient_id
+        FROM patients
+        WHERE user_id = %s
+        LIMIT 1
+        """,
+        (session["user_id"],)
+    )
+
+    patient_row = patient_cursor.fetchone()
+    patient_cursor.close()
+
+    if not patient_row:
+        connection.close()
+        flash("Patient profile not found.", "danger")
+        return redirect(url_for("patient_dashboard"))
+
+    patient_id = patient_row[0]
 
     cursor = connection.cursor(dictionary=True)
 
@@ -1786,7 +1833,12 @@ def patient_prediction_history():
             JOIN medical_reports m
                 ON e.report_id = m.report_id
 
-            WHERE m.patient_id = %s
+            WHERE m.patient_id = (
+                SELECT patient_id
+                FROM patients
+                WHERE user_id = %s
+                LIMIT 1
+            )
 
             ORDER BY p.created_at DESC
             """,
@@ -1875,8 +1927,13 @@ def patient_doctor_reviews():
             JOIN medical_reports m
                 ON e.report_id = m.report_id
 
-            WHERE m.patient_id = %s
-                AND p.prediction_status = 'COMPLETED'
+            WHERE m.patient_id = (
+                SELECT patient_id
+                FROM patients
+                WHERE user_id = %s
+                LIMIT 1
+            )
+            AND p.prediction_status = 'COMPLETED'
             """,
             (session["user_id"],)
         )
@@ -1948,8 +2005,13 @@ def patient_doctor_reviews():
             JOIN medical_reports m
                 ON rdr.report_id = m.report_id
 
-            WHERE m.patient_id = %s
-              AND rdr.review_status = 'REVIEWED'
+            WHERE m.patient_id = (
+                SELECT patient_id
+                FROM patients
+                WHERE user_id = %s
+                LIMIT 1
+            )
+            AND rdr.review_status = 'REVIEWED'
             """,
             (session["user_id"],)
         )
@@ -2113,8 +2175,11 @@ def doctor_predictions():
             JOIN medical_reports m
                 ON e.report_id = m.report_id
 
+            JOIN patients pt
+                ON m.patient_id = pt.patient_id
+
             JOIN users u
-                ON m.patient_id = u.user_id
+                ON pt.user_id = u.user_id
 
             WHERE p.prediction_status = 'COMPLETED'
 
@@ -2228,8 +2293,11 @@ def doctor_qaml_results():
             JOIN medical_reports m
                 ON e.report_id = m.report_id
 
+            JOIN patients pt
+                ON p.patient_id = pt.patient_id
+
             JOIN users u
-                ON m.patient_id = u.user_id
+                ON pt.user_id = u.user_id
 
             WHERE p.prediction_status = 'COMPLETED'
 
@@ -2358,9 +2426,11 @@ def doctor_reports():
                 e.extraction_confidence
 
             FROM medical_reports m
+            JOIN patients pt
+                ON m.patient_id = pt.patient_id
 
             JOIN users u
-                ON m.patient_id = u.user_id
+                ON pt.user_id = u.user_id
 
             LEFT JOIN extracted_features e
                 ON m.report_id = e.report_id
@@ -3058,8 +3128,11 @@ def doctor_features():
             JOIN medical_reports m
                 ON e.report_id = m.report_id
 
+            JOIN patients pt
+                ON m.patient_id = pt.patient_id
+
             JOIN users u
-                ON m.patient_id = u.user_id
+                ON pt.user_id = u.user_id
 
             ORDER BY e.extracted_at DESC
             """
@@ -3510,8 +3583,11 @@ def doctor_dashboard():
             JOIN medical_reports m
                 ON e.report_id = m.report_id
 
+            JOIN patients pt
+                ON m.patient_id = pt.patient_id
+
             JOIN users u
-                ON m.patient_id = u.user_id
+                ON pt.user_id = u.user_id
 
             WHERE p.prediction_status = 'COMPLETED'
 
@@ -3670,8 +3746,11 @@ def doctor_patients():
 
             FROM users u
 
+            JOIN patients pt
+                ON u.user_id = pt.user_id
+
             LEFT JOIN medical_reports m
-                ON u.user_id = m.patient_id
+                ON pt.patient_id = m.patient_id
 
             LEFT JOIN extracted_features e
                 ON m.report_id = e.report_id
@@ -3842,8 +3921,11 @@ def doctor_case_details(prediction_id):
             JOIN medical_reports m
                 ON e.report_id = m.report_id
 
+            JOIN patients pt
+                ON m.patient_id = pt.patient_id
+
             JOIN users u
-                ON m.patient_id = u.user_id
+                ON pt.user_id = u.user_id
 
             WHERE p.prediction_id = %s
 
@@ -4331,8 +4413,11 @@ def doctor_reviews():
             JOIN medical_reports m
                 ON e.report_id = m.report_id
 
+            JOIN patients pt
+                ON p.patient_id = pt.patient_id
+
             JOIN users u
-                ON m.patient_id = u.user_id
+                ON pt.user_id = u.user_id
 
             LEFT JOIN doctor_reviews dr
                 ON p.prediction_id = dr.prediction_id
@@ -4687,11 +4772,33 @@ def upload_report():
 
     try:
 
-        patient_id = session["user_id"]
-
         cursor.execute(
             """
-            INSERT INTO medical_reports
+            SELECT patient_id
+            FROM patients
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (session["user_id"],)
+        )
+
+        patient = cursor.fetchone()
+
+        if not patient:
+            connection.rollback()
+
+            flash(
+                "Patient profile not found. Please contact support.",
+                "danger"
+            )
+
+            return redirect(request.url)
+
+        patient_id = patient[0]
+
+        cursor.execute(
+        """
+        INSERT INTO medical_reports
             (
                 patient_id,
                 report_type,
@@ -4823,10 +4930,9 @@ def upload_report():
             # ------------------------------------------------
 
             if validation_status == "VALID":
-
                 prediction_success = (
                     predict_from_extraction(
-                        patient_id=session["user_id"],
+                        patient_id=patient_id,
                         extraction_id=extraction_id
                     )
                 )
@@ -5004,10 +5110,14 @@ def prediction_result(extraction_id):
 
             INNER JOIN medical_reports m
                 ON e.report_id = m.report_id
-
             WHERE
                 e.extraction_id = %s
-                AND m.patient_id = %s
+                AND m.patient_id = (
+                    SELECT patient_id
+                    FROM patients
+                    WHERE user_id = %s
+                    LIMIT 1
+                )
 
             LIMIT 1
             """,
@@ -5057,7 +5167,12 @@ def prediction_result(extraction_id):
 
             WHERE
                 p.extraction_id = %s
-                AND p.patient_id = %s
+                AND p.patient_id = (
+                    SELECT patient_id
+                    FROM patients
+                    WHERE user_id = %s
+                    LIMIT 1
+                )
 
             ORDER BY p.prediction_id DESC
 
@@ -5506,8 +5621,13 @@ def admin_predictions():
                 p.qaml_quantum_score,
                 p.created_at
             FROM predictions p
+
+            LEFT JOIN patients pt
+                ON p.patient_id = pt.patient_id
+
             LEFT JOIN users u
-                ON p.patient_id = u.user_id
+                ON pt.user_id = u.user_id
+
             ORDER BY p.created_at DESC
         """)
 
