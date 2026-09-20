@@ -21,6 +21,12 @@ from src.prediction_service import predict_from_extraction
 from auth import register_patient, authenticate_user
 from database import get_db_connection
 
+import sklearn
+
+print("===== RUNTIME ENVIRONMENT =====")
+print("scikit-learn version:", sklearn.__version__)
+print("================================")
+
 app = Flask(__name__)
 def create_system_log(action, description, user_id=None):
     connection = get_db_connection()
